@@ -1,0 +1,7 @@
+backend/app/models/features_knn
+backend/app/models/features_faiss_more_data
+backend/app/models/features_faiss
+backend/app/models/img_test
+backend/app/models/features_knn_more_data
+backend/app/uploaded_videos
+backend/app/uploads
