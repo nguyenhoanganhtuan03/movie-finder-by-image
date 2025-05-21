@@ -90,7 +90,14 @@ def predict_film_from_video(video_path):
     if total_frames == 0:
         return "❌ Video không có frame nào."
 
-    frame_indices = [0, total_frames // 2, total_frames - 1]
+    # 5 frame
+    frame_indices = [
+        0,
+        total_frames // 4,
+        total_frames // 2,
+        (3 * total_frames) // 4,
+        total_frames - 1
+    ]
     predictions = []
 
     for idx in frame_indices:
@@ -104,26 +111,36 @@ def predict_film_from_video(video_path):
         x = np.expand_dims(frame, axis=0)
         x = preprocess_input(x)
 
-        feature = model.predict(x, verbose=0).astype(np.float32)
+        feature = model.predict(x, verbose=0)
+        feature = l2_normalize(feature)
+        feature = feature.astype(np.float32)
         D, I = index.search(feature, 1)
 
-        label_data = index_labels[I[0][0]]
-        if isinstance(label_data, (np.ndarray, list)) and len(label_data) > 1:
-            label_id = int(np.argmax(label_data)) + 1
-        else:
-            label_id = int(label_data)
+        euclidean_dist_squared = D[0][0]
+        similarity_score = 1 - euclidean_dist_squared / 2  # Chuyển đổi khoảng cách thành cosine similarity
 
-        predictions.append(label_id)
+        # Nếu similarity dưới ngưỡng, gán nhãn "Khác" (43)
+        if similarity_score < similarity_threshold:
+            pred_label = 43
+        else:
+            # Lấy nhãn dự đoán từ FAISS
+            pred_label_data = index_labels[I[0][0]]
+            if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
+                pred_label = int(np.argmax(pred_label_data)) + 1
+            else:
+                pred_label = int(pred_label_data)
+
+        predictions.append(pred_label)
 
     cap.release()
 
     if not predictions:
         return "❌ Không đọc được frame hợp lệ nào."
 
-    # Lấy nhãn có nhiều vote nhất
     most_common_id = Counter(predictions).most_common(1)[0][0]
     film_name = classes.get(most_common_id, "Không xác định")
     return film_name
+
 
 # Hàm tự động nhận biết loại file và xử lý
 def predict_film_auto(input_path):
@@ -146,6 +163,6 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-input_path = os.path.join(base_dir, "img_test/taxi_em_ten_gi.jpg")
+input_path = os.path.join(base_dir, "img_test/ra_mat_gia_tien.mp4")
 predicted_film = predict_film_auto(input_path)
 print(f"🎬 Dự đoán: {predicted_film}")
