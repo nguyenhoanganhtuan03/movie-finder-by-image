@@ -30,9 +30,7 @@ index = faiss.read_index(index_path)
 index_labels = np.load(label_path)
 
 # ==== Danh sách phim (mapping) ====
-# Sieu_Quay --> 4_Nam_2_Chang_1_Tinh_Yeu
-# Dat_Phuong_Nam --> Dat_Rung_Phuong_Nam
-# Bỏ Oán Linh
+# Thêm Linh Miêu Quỷ Nhập Tràng, Đôi Mắt Âm Dương, Nghề Siêu Dễ, Tấm Cám Chuyện Chưa Kể
 # Chạy lại Dataset
 classes = {
     1: "21 Ngày yêu em", 2: "Ăn tết bên cồn", 3: "Bẫy ngọt ngào", 4: "Bệnh viện ma",

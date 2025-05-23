@@ -2,12 +2,19 @@ import os
 import cv2
 import random
 import unicodedata
+import shutil
 
 # Chuyển tên thư mục sang không dấu và không có ký tự đặc biệt (chỉ dùng khi lưu ảnh)
 def safe_folder_name(name):
+    # Chuẩn hóa chuỗi và loại bỏ dấu
     normalized = unicodedata.normalize('NFD', name)
     no_accent = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
-    safe_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in no_accent)
+
+    # Thay thế chữ Đ thành D
+    no_d = no_accent.replace('Đ', 'D').replace('đ', 'd')
+
+    # Loại bỏ ký tự đặc biệt, chỉ giữ lại chữ cái, số và dấu gạch dưới
+    safe_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in no_d)
     return safe_name
 
 # Tách và lưu frame từ video vào thư mục train/test
@@ -107,20 +114,50 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
     print(f"✅ Đã xử lý xong video: {video_path}\n")
 
 # Xử lý toàn bộ thư mục chứa video
-def process_all_videos(input_root, train_dir, test_dir):
+def process_all_videos(input_root, train_dir, test_dir, target_size=(128, 128)):
     os.makedirs(train_dir, exist_ok=True)
     os.makedirs(test_dir, exist_ok=True)
 
     for root, dirs, files in os.walk(input_root):
-        for file in files:
-            if file.lower().endswith((".mp4")):
-                video_path = os.path.join(root, file)
-                extract_frames_from_video(video_path, train_dir, test_dir)
+        mp4_files = [f for f in files if f.lower().endswith(".mp4")]
+        jpg_files = [f for f in files if f.lower().endswith(".jpg")]
+
+        if not mp4_files:
+            continue
+
+        # Lấy tên nhãn (tên thư mục cha chứa video)
+        label_folder = os.path.basename(root)
+        safe_label = safe_folder_name(label_folder)
+        label_train_dir = os.path.join(train_dir, safe_label)
+        os.makedirs(label_train_dir, exist_ok=True)
+
+        # ✅ Resize và copy ảnh .jpg vào thư mục train tương ứng
+        for jpg_file in jpg_files:
+            src_path = os.path.join(root, jpg_file)
+            dst_path = os.path.join(label_train_dir, jpg_file)
+            try:
+                img = cv2.imread(src_path)
+                if img is None:
+                    print(f"⚠️ Không đọc được ảnh: {src_path}")
+                    continue
+                resized_img = cv2.resize(img, target_size)
+                success = cv2.imwrite(dst_path, resized_img)
+                if success:
+                    print(f"[RESIZE & COPY] {src_path} ➜ {dst_path}")
+                else:
+                    print(f"❌ Không thể lưu ảnh đã resize: {dst_path}")
+            except Exception as e:
+                print(f"❌ Lỗi khi xử lý ảnh {src_path}: {e}")
+
+        # ✅ Xử lý các video trong thư mục
+        for mp4_file in mp4_files:
+            video_path = os.path.join(root, mp4_file)
+            extract_frames_from_video(video_path, train_dir, test_dir)
 
 # Cấu hình đường dẫn dữ liệu
-input_folder = 'E:\\Data\\Film_Cut_Dataset'
-frames_train = 'E:\\Data\\Extract_Frame_New_2\\Train'
-frames_test = 'E:\\Data\\Extract_Frame_New_2\\Test'
+input_folder = 'E:\\Data\\Movie_Dataset\\Film_Cut_Dataset'
+frames_train = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Train'
+frames_test = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Test'
 
 # Gọi hàm chính để xử lý
 process_all_videos(input_folder, frames_train, frames_test)

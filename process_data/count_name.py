@@ -1,7 +1,7 @@
 import os
 
 # Đường dẫn đến thư mục cha
-folder_path = r'E:\Data\Film_Cut_Dataset'
+folder_path = r'E:\Data\Film_Dataset'
 
 # Lấy danh sách thư mục con
 subfolders = [

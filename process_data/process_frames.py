@@ -47,6 +47,6 @@ def copy_valid_images(input_root, output_root, threshold=0.9):
                 print(f"Error processing {file_path}: {e}")
 
 # Sử dụng:
-input_root = "E:\\Data\\Extract_Frame_New_2\\Test"
-output_root = "E:\\Data\\Process_Frame_2\\Test"
+input_root = "E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test"
+output_root = "E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test"
 copy_valid_images(input_root, output_root)
