@@ -80,7 +80,7 @@
         <template v-else>
           <!-- Hiển thị "Đăng nhập / Đăng ký" nếu chưa đăng nhập -->
           <div class="auth-links">
-            <router-link to="/login" class="auth-link">Đăng nhập</router-link>
+            <router-link to="/stafflogin" class="auth-link">Đăng nhập</router-link>
             <span style="color: white;">/</span>
             <router-link to="/register" class="auth-link">Đăng ký</router-link>
           </div>

@@ -7,6 +7,16 @@
           <h2>Quản lý phim</h2>
           <button class="btn btn-primary" @click="showAddForm = true">+ Thêm phim</button>
         </div>
+
+        <!-- Thanh tìm kiếm -->
+        <div class="input-group mb-4">
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="form-control"
+            placeholder="Tìm tên phim..."
+          />
+        </div>
   
         <!-- Form thêm phim -->
         <div v-if="showAddForm" class="mb-4 border p-3 rounded">
@@ -88,8 +98,12 @@
   
         <!-- Danh sách phim -->
         <div class="row">
+          <!-- Số lượng phim được lọc -->
+          <div class="mb-3">
+            <strong>Tổng số phim:</strong> {{ filteredMovies.length }}
+          </div>
           <MovieCardAdmin
-            v-for="movie in [...movies].reverse()"
+            v-for="movie in filteredMovies"
             :key="movie._id"
             :movie="movie"
             @edit="handleEditMovie"
@@ -138,8 +152,25 @@
         },
         genreInput: "",
         actorInput: "",
+        searchQuery: "",
       };
     },
+
+    computed: {
+      filteredMovies() {
+        const removeVietnameseTones = (str) => {
+          return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+        };
+
+        const q = removeVietnameseTones(this.searchQuery.trim().toLowerCase());
+
+        return this.movies.filter((movie) => {
+          const movieName = removeVietnameseTones(movie.name.toLowerCase());
+          return movieName.includes(q);
+        }).reverse();
+      },
+    },
+    
     methods: {
       async fetchMovies() {
         this.movies = await MovieService.getAll();
