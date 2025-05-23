@@ -3,6 +3,7 @@ from typing import Optional, List
 
 from app.entities.movie_model import MovieModel
 from app.database import db
+from app.models.run_model_faiss import predict_film_auto
 
 from pymongo import ReturnDocument
 
@@ -121,9 +122,6 @@ async def search_movies_by_name(partial_name: str):
     movies = await movies_cursor.to_list(length=None)
 
     print("🟢 Found:", len(movies), "movies")
-
-    if not movies:
-        raise HTTPException(status_code=404, detail="No movies found matching the name")
 
     return movies
 

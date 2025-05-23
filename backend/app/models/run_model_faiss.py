@@ -35,18 +35,17 @@ index_labels = np.load(label_path)
 # Bỏ Oán Linh
 # Chạy lại Dataset
 classes = {
-    1: "21_Ngay_Yeu_Em", 2: "An_Tet_Ben_Con", 3: "Bay_Ngot_Ngao", 4: "Benh_Vien_Ma",
-    5: "Bi_Mat_Lai_Bi_Mat", 6: "Bi_Mat_Trong_Suong_Mu", 7: "Bo_Tu_Oan_Gia", 8: "Cho_Em_Den_Ngay_Mai",
-    9: "Chu_Tich_Giao_Hang", 10: "Chuyen_Tet", 11: "Co_Ba_Sai_Gon", 12: "Dao_Pho_Va_Piano",
-    13: "Dat_Rung_Phuong_Nam", 14: "Dia_Dao", 15: "Dinh_Menh_Thien_Y", 16: "Em_Chua_18",
-    17: "Em_La_Cua_Em", 18: "Gai_Gia_Lam_Chieu_3", 19: "Gia_Ngheo_Gap_Phat", 20: "Hem_Cut",
-    21: "Hoan_Doi", 22: "Ke_An_Danh", 23: "Ke_An_Hon", 24: "Lam_Giau_Voi_Ma",
-    25: "Lat_Mat_1", 26: "Lo_Mat", 27: "Ma_Da", 28: "Mat_Biec",
-    29: "Nhung_Nu_Hon_Ruc_Ro", 30: "Oan_Linh__Phan_1", 31: "Ong_Ngoai_Tuoi_30",
-    32: "Phap_Su_Tap_Su", 33: "Quy_Co_Thua_Ke", 34: "Ra_Mat_Gia_Tien",
-    35: "Sieu_Lua_Gap_Sieu_Lay", 36: "4_Nam_2_Chang_1_Tinh_Yeu", 37: "Sieu_Tro_Ly",
-    38: "Taxi_Em_Ten_Gi", 39: "The_Call", 40: "Thien_Menh_Anh_Hung",
-    41: "Tieu_Thu_Va_Ba_Dau_Gau", 42: "Tren_Ban_Nhau_Duoi_Ban_Muu", 43: "Khac"
+    1: "21 Ngày yêu em", 2: "Ăn tết bên cồn", 3: "Bẫy ngọt ngào", 4: "Bệnh viện ma",
+    5: "Bí mật lại bị mất", 6: "Bí mật trong sương mù", 7: "Bộ tứ oan gia", 8: "Chờ em đến ngày mai",
+    9: "Chủ tịch giao hàng", 10: "Chuyện tết", 11: "Cô ba sài gòn", 12: "Đào, phở và piano",
+    13: "Đất rừng phương nam", 14: "Địa đạo", 15: "Định mệnh thiên y", 16: "Em chưa 18",
+    17: "Em là của em", 18: "Gái già lắm chiêu", 19: "Giả nghèo gặp phật", 20: "Hẻm cụt",
+    21: "Hoán đổi", 22: "Kẻ ẩn danh", 23: "Kẻ ăn hồn", 24: "Làm giàu với ma",
+    25: "Lật mặt 1", 26: "Lộ mặt", 27: "Ma da", 28: "Mắt biếc",
+    29: "Những nụ hôn rực rỡ", 30: "Oán linh", 31: "Ông ngoại tuổi 30", 32: "Pháp sư tập sự",
+    33: "Quý cô thừa kế", 34: "Ra mắt gia tiên", 35: "Siêu lừa gặp siêu lầy", 36: "4 năm 2 chàng 1 tình yêu",
+    37: "Siêu trợ lý", 38: "Taxi em tên gì", 39: "The Call", 40: "Thiên mệnh anh hùng",
+    41: "Tiểu thư và ba đầu gấu", 42: "Trên bàn nhậu dưới bàn mưu", 43: "Khác"
 }
 
 # Chuẩn hóa L2 cho mỗi vector (độ dài = 1)
@@ -167,6 +166,6 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-input_path = os.path.join(base_dir, "img_test/4_2_1.jpg")
-predicted_film = predict_film_auto(input_path)
-print(f"🎬 Dự đoán: {predicted_film}")
+# input_path = os.path.join(base_dir, "img_test/4_2_1.jpg")
+# predicted_film = predict_film_auto(input_path)
+# print(f"🎬 Dự đoán: {predicted_film}")

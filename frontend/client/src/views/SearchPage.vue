@@ -1,0 +1,269 @@
+<template>
+    <div>
+      <AppHeader />
+  
+      <div class="container my-5">
+        <h2 class="mb-4">Tìm kiếm phim</h2>
+  
+        <!-- Ô tìm kiếm -->
+        <div class="input-group mb-3">
+          <input
+            v-model="searchText"
+            type="text"
+            class="form-control"
+            placeholder="Nhập từ khoá tìm kiếm..."
+            @input="performSearch"
+          />
+        </div>
+  
+        <!-- Upload ảnh -->
+        <div class="mb-3">
+          <label class="form-label">Upload ảnh:</label>
+          <input 
+            ref="imageInput"
+            type="file" 
+            accept="image/jpeg,image/jpg,image/png" 
+            @change="handleImageUpload" 
+            class="form-control" 
+          />
+          <div v-if="isUploading" class="mt-2">
+            <span class="text-info">Đang xử lý...</span>
+          </div>
+        </div>
+  
+        <!-- Upload video -->
+        <div class="mb-3">
+          <label class="form-label">Upload video (dưới 5 phút):</label>
+          <input 
+            ref="videoInput"
+            type="file" 
+            accept="video/mp4,video/mov" 
+            @change="handleVideoUpload" 
+            class="form-control" 
+          />
+          <div v-if="isUploading" class="mt-2">
+            <span class="text-info">Đang xử lý...</span>
+          </div>
+        </div>
+  
+        <!-- Video preview nếu có -->
+        <div v-if="videoURL" class="d-flex align-items-center justify-content-center mt-3 gap-3 flex-wrap">
+            <video :src="videoURL" controls style="max-width: 100%; max-height: 300px;"></video>
+            <button @click="clearVideo" class="btn btn-sm btn-secondary">Xóa video</button>
+        </div>
+
+        <!-- Ảnh preview nếu có -->
+        <div v-if="imageURL" class="d-flex align-items-center justify-content-center mt-3 gap-3 flex-wrap">
+            <img :src="imageURL" alt="Ảnh upload" style="max-width: 100%; max-height: 300px;" />
+            <button @click="clearImage" class="btn btn-sm btn-secondary">Xóa ảnh</button>
+        </div>
+
+        <!-- Hiển thị tên phim được dự đoán -->
+        <div v-if="predictedName" class="alert alert-info mt-3">
+          <strong>Phim được tìm thấy:</strong> {{ predictedName }}
+        </div>
+  
+        <hr />
+  
+        <!-- Kết quả -->
+        <h5 class="mt-4">Kết quả tìm kiếm:</h5>
+        <div class="row">
+          <MovieCard
+            v-for="movie in searchResults"
+            :key="movie._id"
+            :movie="movie"
+          />
+        </div>
+  
+        <div v-if="searchResults.length === 0 && !isUploading" class="text-muted mt-3">
+          Không tìm thấy kết quả nào.
+        </div>
+      </div>
+  
+      <AppFooter />
+    </div>
+  </template>
+  
+  <script>
+  import AppHeader from "@/components/common/AppHeader.vue";
+  import AppFooter from "@/components/common/AppFooter.vue";
+  import MovieCard from "@/components/movies/movieCard.vue";
+  import MovieService from "@/services/movie.service";
+  
+  export default {
+    components: {
+      AppHeader,
+      AppFooter,
+      MovieCard,
+    },
+    data() {
+      return {
+        searchText: "",
+        videoURL: "",
+        imageURL: "",
+        searchResults: [],
+        predictedName: "",
+        isUploading: false,
+      };
+    },
+    methods: {
+      async performSearch() {
+        const text = this.searchText.trim();
+        if (!text) {
+          this.searchResults = [];
+          return;
+        }
+        try {
+          this.searchResults = await MovieService.searchByName(text);
+        } catch (error) {
+          console.error("Lỗi tìm kiếm:", error);
+          this.searchResults = [];
+        }
+      },
+  
+      async handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+  
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+          alert("Chỉ chấp nhận file ảnh định dạng JPG, JPEG, PNG!");
+          this.clearImageInput();
+          return;
+        }
+  
+        if (file.size > 10 * 1024 * 1024) {
+          alert("Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 10MB.");
+          this.clearImageInput();
+          return;
+        }
+  
+        try {
+          this.isUploading = true;
+          this.clearVideo(); // Xóa video nếu có
+          this.imageURL = URL.createObjectURL(file);
+          
+          // Gọi searchByFile đúng hàm trong MovieService
+          const result = await MovieService.searchByFile(file);
+          this.searchResults = result.results || [];
+          this.predictedName = result.predicted_name || "";
+  
+          if (this.searchResults.length === 0) {
+            alert("Không nhận diện được phim từ ảnh này!");
+          }
+        } catch (error) {
+          console.error("Lỗi upload ảnh:", error);
+          alert("Có lỗi xảy ra khi xử lý ảnh!");
+          this.clearImage();
+        } finally {
+          this.isUploading = false;
+        }
+      },
+  
+      async handleVideoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+  
+        const allowedTypes = ['video/mp4', 'video/mov'];
+        if (!allowedTypes.includes(file.type)) {
+          alert("Chỉ chấp nhận file video định dạng MP4, MOV!");
+          this.clearVideoInput();
+          return;
+        }
+  
+        if (file.size > 50 * 1024 * 1024) {
+          alert("Kích thước video quá lớn! Vui lòng chọn video dưới 50MB.");
+          this.clearVideoInput();
+          return;
+        }
+  
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        
+        video.onloadedmetadata = async () => {
+          try {
+            if (video.duration <= 300) { // 5 phút
+              this.isUploading = true;
+              this.clearImage(); // Xóa ảnh nếu có
+              this.videoURL = URL.createObjectURL(file);
+              
+              // Gọi searchByFile đúng hàm trong MovieService
+              const result = await MovieService.searchByFile(file);
+              this.searchResults = result.results || [];
+              this.predictedName = result.predicted_name || "";
+  
+              if (this.searchResults.length === 0) {
+                alert("Không nhận diện được phim từ video này!");
+              }
+            } else {
+              alert("Video phải dưới 5 phút!");
+              this.clearVideoInput();
+            }
+          } catch (error) {
+            console.error("Lỗi upload video:", error);
+            alert("Có lỗi xảy ra khi xử lý video!");
+            this.clearVideo();
+          } finally {
+            this.isUploading = false;
+          }
+        };
+  
+        video.onerror = () => {
+          alert("Không thể đọc được file video!");
+          this.clearVideoInput();
+        };
+  
+        video.src = URL.createObjectURL(file);
+      },
+  
+      clearImage() {
+        if (this.imageURL) {
+          URL.revokeObjectURL(this.imageURL);
+        }
+        this.imageURL = "";
+        this.clearImageInput();
+      },
+  
+      clearVideo() {
+        if (this.videoURL) {
+          URL.revokeObjectURL(this.videoURL);
+        }
+        this.videoURL = "";
+        this.clearVideoInput();
+      },
+  
+      clearImageInput() {
+        if (this.$refs.imageInput) {
+          this.$refs.imageInput.value = "";
+        }
+      },
+  
+      clearVideoInput() {
+        if (this.$refs.videoInput) {
+          this.$refs.videoInput.value = "";
+        }
+      },
+    },
+  
+    beforeUnmount() {
+      this.clearImage();
+      this.clearVideo();
+    },
+  };
+  </script>  
+  
+  <style scoped>
+  .container {
+    max-width: 900px;
+  }
+  
+  .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  
+  video, img {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  </style>

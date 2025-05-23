@@ -8,14 +8,17 @@ from uuid import uuid4
 from app.controllers.movie_controller import add_movie, update_movie, delete_movie, search_movies_by_genre
 from app.controllers.movie_controller import get_all_movies, get_movie_by_id, search_movies_by_name
 from app.entities.movie_model import MovieModel
+from app.models.run_model_faiss import predict_film_auto
 
 app = FastAPI()
 router = APIRouter()
 
 UPLOAD_DIR = "backend/app/uploads/uploaded_videos"
+TEMP_DIR = "backend/app/uploads/upload_temps"
 
 # Tạo thư mục lưu file nếu chưa tồn tại
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 @router.post("/uploadFiles")
 async def upload_video_file(file: UploadFile = File(...)):
@@ -84,6 +87,40 @@ async def get_movie_by_id_route(movie_id: str):
 @router.get("/search")
 async def search_movie(name: str = Query(..., description="Partial movie name")):
     return await search_movies_by_name(name)
+
+# Tìm kiếm phim bằng file ảnh, video
+@router.post("/search-by-file")
+async def search_movie_by_file(file: UploadFile = File(...)):
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.mp4', '.mov']
+    if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+        raise HTTPException(
+            status_code=400, 
+            detail="Chỉ chấp nhận file ảnh (JPG, PNG) hoặc video (MP4, MOV)"
+        )
+    
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid4().hex}{file_ext}"
+    file_path = os.path.join(TEMP_DIR, unique_filename)
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": f"Upload failed: {str(e)}"})
+
+    result_name = predict_film_auto(file_path)
+    movies = await search_movies_by_name(result_name)
+
+    if not movies:
+        return {
+            "predicted_name": "Không biết",
+            "results": []
+        }
+
+    return {
+        "predicted_name": result_name,
+        "results": movies
+    }
 
 # Route tìm kiếm phim theo thể loại
 @router.get("/movies/genre/{genre}")

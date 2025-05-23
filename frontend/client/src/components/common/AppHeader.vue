@@ -19,7 +19,7 @@
           <router-link to="/" class="nav-link" active-class="active" exact>Trang chủ</router-link>
         </li>
         <li class="nav-item">
-          <router-link to="#" class="nav-link" active-class="active">Tìm kiếm nâng cao</router-link>
+          <router-link to="/search" class="nav-link" active-class="active">Tìm kiếm nâng cao</router-link>
         </li>
       </ul>
 
