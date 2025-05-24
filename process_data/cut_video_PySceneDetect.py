@@ -111,4 +111,4 @@ input_video_path = 'E:\\Data\\Movie_Dataset\\Film_Dataset'
 output_video_path = 'E:\\Data\\Movie_Dataset\\Film_Cut_Dataset'
 
 # Gọi hàm chính
-process_folder_structure_with_scenedetect(input_video_path, output_video_path, threshold=60.0, min_scene_length=20)
+process_folder_structure_with_scenedetect(input_video_path, output_video_path, threshold=50.0, min_scene_length=20)

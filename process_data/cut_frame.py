@@ -41,14 +41,14 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
     if duration < 5:
         frames_to_extract = [total_frames // 2]
     elif duration < 10:
-        frames_to_extract = [0, total_frames // 2, total_frames - 1]
+        frames_to_extract = [total_frames // 2, total_frames - 1]
     else:
-        # Train/Test: 1: 7, 15   2: 20, 40
-        # Test/Other: 1: 15, 30  2: 40, 80
+        # Train/Test: 1: 5, 10   2: 15, 30
+        # Test/Other: 1: 10, 20  2: 30, 60
         if video_folder.lower() == "khac":
-            divisor = 40 if duration < 200 else 80
+            divisor = 10 if duration < 200 else 20
         else:
-            divisor = 20 if duration < 200 else 40
+            divisor = 5 if duration < 200 else 10
 
         step = int(fps * (duration / divisor))
         step = max(step, 1)
@@ -94,8 +94,8 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
             print(f"❌ Lỗi khi lưu ảnh: {e}")
 
     # Lưu các frame test được chọn ngẫu nhiên
-    if frames_not_needed and frames_needed:
-        num_frames_to_save = int(len(frames_needed) * 0.2)
+    if duration >= 5 and frames_not_needed and frames_needed:
+        num_frames_to_save = int(len(frames_needed) * 0.4)
         num_frames_to_save = max(1, num_frames_to_save)
         selected_frames = random.sample(frames_not_needed, min(num_frames_to_save, len(frames_not_needed)))
 
