@@ -6,20 +6,20 @@ import cv2
 from collections import Counter
 
 from tensorflow.keras.applications import ResNet50, VGG16
-# from tensorflow.keras.applications.resnet50 import preprocess_input
-from tensorflow.keras.applications.vgg16 import preprocess_input
+from tensorflow.keras.applications.resnet50 import preprocess_input
+# from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing import image
 
 # ==== Cấu hình ====
 image_size = 128
 base_dir = os.path.dirname(os.path.abspath(__file__))
-index_path = os.path.join(base_dir, "features_faiss_more_data/vgg16/faiss_features.index")
-label_path = os.path.join(base_dir, "features_faiss_more_data/vgg16/faiss_labels.npy")
+index_path = os.path.join(base_dir, "features_faiss_more_data/resnet50/faiss_features.index")
+label_path = os.path.join(base_dir, "features_faiss_more_data/resnet50/faiss_labels.npy")
 similarity_threshold = 0.8
 
 # ==== Load model ResNet50 ====
-# model = ResNet50(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
-model = VGG16(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
+model = ResNet50(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
+# model = VGG16(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
 
 # ==== Load FAISS index và labels ====
 if not os.path.exists(index_path) or not os.path.exists(label_path):
@@ -64,9 +64,9 @@ def predict_film_from_image(img_path):
     euclidean_dist_squared = D[0][0]
     similarity_score = 1 - euclidean_dist_squared / 2  # Chuyển đổi khoảng cách thành cosine similarity
 
-    # Nếu similarity dưới ngưỡng, gán nhãn "Khác" (43)
+    # Nếu similarity dưới ngưỡng, gán nhãn "Khác"
     if similarity_score < similarity_threshold:
-        pred_label = 43  # Nhãn "Khác"
+        pred_label = 46  # Nhãn "Khác"
     else:
         # Lấy nhãn dự đoán từ FAISS
         pred_label_data = index_labels[I[0][0]]
@@ -117,9 +117,9 @@ def predict_film_from_video(video_path):
         euclidean_dist_squared = D[0][0]
         similarity_score = 1 - euclidean_dist_squared / 2  # Chuyển đổi khoảng cách thành cosine similarity
 
-        # Nếu similarity dưới ngưỡng, gán nhãn "Khác" (43)
+        # Nếu similarity dưới ngưỡng, gán nhãn "Khác"
         if similarity_score < similarity_threshold:
-            pred_label = 43
+            pred_label = 46
         else:
             # Lấy nhãn dự đoán từ FAISS
             pred_label_data = index_labels[I[0][0]]
