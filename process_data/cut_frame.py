@@ -43,12 +43,12 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
     elif duration < 10:
         frames_to_extract = [total_frames // 2, total_frames - 1]
     else:
-        # Train/Test: 1: 5, 10   2: 15, 30
-        # Test/Other: 1: 10, 20  2: 30, 60
+        # Train/Test: 1: 4, 8   2: 12, 24
+        # Test/Khac: 5, 10
         if video_folder.lower() == "khac":
-            divisor = 10 if duration < 200 else 20
-        else:
             divisor = 5 if duration < 200 else 10
+        else:
+            divisor = 12 if duration < 200 else 24
 
         step = int(fps * (duration / divisor))
         step = max(step, 1)
@@ -93,9 +93,26 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
         except Exception as e:
             print(f"❌ Lỗi khi lưu ảnh: {e}")
 
-    # Lưu các frame test được chọn ngẫu nhiên
-    if duration >= 5 and frames_not_needed and frames_needed:
-        num_frames_to_save = int(len(frames_needed) * 0.4)
+    # Lưu các frame test được chọn ngẫu nhiên cho các thư mục khác "khac"
+    if duration >= 5 and video_folder.lower() != "khac" and frames_not_needed and frames_needed:
+        num_frames_to_save = int(len(frames_needed) * 0.35)
+        num_frames_to_save = max(1, num_frames_to_save)
+        selected_frames = random.sample(frames_not_needed, min(num_frames_to_save, len(frames_not_needed)))
+
+        for idx, frame in selected_frames:
+            save_subdir = os.path.join(test_dir, safe_folder)
+            os.makedirs(save_subdir, exist_ok=True)
+            save_path = os.path.join(save_subdir, f"{video_name}_f{idx}.jpg")
+            try:
+                success = cv2.imwrite(save_path, frame)
+                if not success:
+                    print(f"❌ Không thể lưu test ảnh tại: {save_path}")
+            except Exception as e:
+                print(f"❌ Lỗi khi lưu test ảnh: {e}")
+
+    # Lưu các frame test cho thư mục "khac" (bỏ qua điều kiện duration)
+    elif video_folder.lower() == "khac" and frames_not_needed and frames_needed:
+        num_frames_to_save = int(len(frames_needed) * 0.5)
         num_frames_to_save = max(1, num_frames_to_save)
         selected_frames = random.sample(frames_not_needed, min(num_frames_to_save, len(frames_not_needed)))
 
@@ -156,8 +173,8 @@ def process_all_videos(input_root, train_dir, test_dir, target_size=(128, 128)):
 
 # Cấu hình đường dẫn dữ liệu
 input_folder = 'E:\\Data\\Movie_Dataset\\Film_Cut_Dataset'
-frames_train = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Train'
-frames_test = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Test'
+frames_train = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Train'
+frames_test = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Test'
 
 # Gọi hàm chính để xử lý
 process_all_videos(input_folder, frames_train, frames_test)
