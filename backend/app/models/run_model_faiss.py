@@ -30,19 +30,17 @@ index = faiss.read_index(index_path)
 index_labels = np.load(label_path)
 
 # ==== Danh sách phim (mapping) ====
-# Chạy lại Dataset
 classes = {
-    1: "21 Ngày yêu em", 2: "Ăn tết bên cồn", 3: "Bẫy ngọt ngào", 4: "Bệnh viện ma",
-    5: "Bí mật lại bị mất", 6: "Bí mật trong sương mù", 7: "Bộ tứ oan gia", 8: "Chờ em đến ngày mai",
-    9: "Chủ tịch giao hàng", 10: "Chuyện tết", 11: "Cô ba sài gòn", 12: "Đào, phở và piano",
-    13: "Đất rừng phương nam", 14: "Địa đạo", 15: "Định mệnh thiên y", 16: "Em chưa 18",
-    17: "Em là của em", 18: "Gái già lắm chiêu", 19: "Giả nghèo gặp phật", 20: "Hẻm cụt",
-    21: "Hoán đổi", 22: "Kẻ ẩn danh", 23: "Kẻ ăn hồn", 24: "Làm giàu với ma",
-    25: "Lật mặt 1", 26: "Lộ mặt", 27: "Ma da", 28: "Mắt biếc",
-    29: "Những nụ hôn rực rỡ", 30: "Oán linh", 31: "Ông ngoại tuổi 30", 32: "Pháp sư tập sự",
-    33: "Quý cô thừa kế", 34: "Ra mắt gia tiên", 35: "Siêu lừa gặp siêu lầy", 36: "4 năm 2 chàng 1 tình yêu",
-    37: "Siêu trợ lý", 38: "Taxi em tên gì", 39: "The Call", 40: "Thiên mệnh anh hùng",
-    41: "Tiểu thư và ba đầu gấu", 42: "Trên bàn nhậu dưới bàn mưu", 43: "Khác"
+    1: "21 Ngày Yêu Em", 2: "4 Năm 2 Chàng 1 Tình Yêu", 3: "Ăn Tết Bên Cồn", 4: "Bẫy Ngọt Ngào", 5: "Bệnh Viện Ma",
+    6: "Bí Mật Lại Bị Mất", 7: "Bí Mật Trong Sương Mù", 8: "Bộ Tứ Oan Gia", 9: "Chờ Em Đến Ngày Mai", 10: "Chủ Tịch Giao Hàng",
+    11: "Chuyện Tết", 12: "Cô Ba Sài Gòn", 13: "Đào, Phở Và Piano", 14: "Đất Rừng Phương Nam", 15: "Địa Đạo",
+    16: "Định Mệnh Thiên Ý", 17: "Đôi Mắt Âm Dương", 18: "Em Chưa 18", 19: "Em Là Của Em", 20: "Gái Già Lắm Chiêu 3",
+    21: "Giả Nghèo Gặp Phật", 22: "Hẻm Cụt", 23: "Hoán Đổi", 24: "Kẻ Ẩn Danh", 25: "Kẻ Ăn Hồn",
+    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Linh Miêu Quỷ Nhập Tràng", 29: "Lộ Mặt", 30: "Ma Da",
+    31: "Mắt Biếc", 32: "Nghề Siêu Dễ", 33: "Những Nụ Hôn Rực Rỡ", 34: "Ông Ngoại Tuổi 30", 35: "Pháp Sư Tập Sự",
+    36: "Quý Cô Thừa Kế", 37: "Ra Mắt Gia Tiên", 38: "Siêu Lừa Gặp Siêu Lầy", 39: "Siêu Trợ Lý", 40: "Tấm Cám Chuyện Chưa Kể",
+    41: "Taxi Em Tên Gì", 42: "The Call", 43: "Thiên Mệnh Anh Hùng", 44: "Tiểu Thư Và Ba Đầu Gấu", 45: "Trên Bàn Nhậu Dưới Bàn Mưu",
+    46: "Khác"
 }
 
 # Chuẩn hóa L2 cho mỗi vector (độ dài = 1)
