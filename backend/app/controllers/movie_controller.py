@@ -3,7 +3,6 @@ from typing import Optional, List
 
 from app.entities.movie_model import MovieModel
 from app.database import db
-from backend.app.models.run_model_cnn_faiss import predict_film_auto
 
 from pymongo import ReturnDocument
 

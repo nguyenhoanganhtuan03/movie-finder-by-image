@@ -188,6 +188,7 @@ def predict_film_auto(input_path):
             return "❌ Định dạng không hỗ trợ."
 
         end_time = time.time()
+        print("=====Đặc trưng SIFT + KMeans=====")
         print(f"⏱️ Thời gian xử lý: {end_time - start_time:.4f} giây")
         return film_name
 
@@ -200,3 +201,4 @@ def predict_film_auto(input_path):
 #     input_path = os.path.join(base_dir, "img_test/chu_tich_giao_hang.mp4")
 #     predicted_film = predict_film_auto(input_path)
 #     print(f"🎬 Dự đoán: {predicted_film}")
+    

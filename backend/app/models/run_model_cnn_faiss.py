@@ -154,6 +154,7 @@ def predict_film_auto(input_path):
             return "❌ Định dạng không hỗ trợ."
 
         end_time = time.time()
+        print("=====Đặc trưng CNN=====")
         print(f"⏱️ Thời gian xử lý: {end_time - start_time:.4f} giây")
         return film_name
 
@@ -161,6 +162,7 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-# input_path = os.path.join(base_dir, "img_test/4_2_1.jpg")
-# predicted_film = predict_film_auto(input_path)
-# print(f"🎬 Dự đoán: {predicted_film}")
+# if __name__ == "__main__":
+#     input_path = os.path.join(base_dir, "img_test/chu_tich_giao_hang.mp4")
+#     predicted_film = predict_film_auto(input_path)
+#     print(f"🎬 Dự đoán: {predicted_film}")

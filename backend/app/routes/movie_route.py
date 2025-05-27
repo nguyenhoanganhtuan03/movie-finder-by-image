@@ -8,7 +8,9 @@ from uuid import uuid4
 from app.controllers.movie_controller import add_movie, update_movie, delete_movie, search_movies_by_genre
 from app.controllers.movie_controller import get_all_movies, get_movie_by_id, search_movies_by_name
 from app.entities.movie_model import MovieModel
-from backend.app.models.run_model_cnn_faiss import predict_film_auto
+from app.models.run_model_cnn_faiss import predict_film_auto
+# from app.models.run_model_sift_faiss import predict_film_auto
+# from app.models.run_model_hog_faiss import predict_film_auto
 
 app = FastAPI()
 router = APIRouter()
