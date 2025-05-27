@@ -1,7 +1,7 @@
 from fastapi import UploadFile
 import shutil
 import os
-from app.models.run_model_faiss import predict_film_auto
+from backend.app.models.run_model_cnn_faiss import predict_film_auto
 
 # Đường dẫn thư mục tạm để lưu file ảnh hoặc video
 TEMP_UPLOAD_DIR = "backend/app/uploads/upload_temps"
