@@ -6,7 +6,6 @@ from collections import Counter
 
 import onnxruntime as ort
 from sklearn.preprocessing import normalize
-from tensorflow.keras.preprocessing import image
 import faiss
 
 # ==== Cấu hình ====

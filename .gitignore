@@ -5,3 +5,4 @@ backend/app/models/img_test
 backend/app/models/features_knn_more_data
 backend/app/uploaded_videos
 backend/app/uploads
+backend/app/models/chatbot_langchain/models_llm
