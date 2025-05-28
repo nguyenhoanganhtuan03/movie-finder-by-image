@@ -11,7 +11,7 @@ import faiss
 
 # ==== Cấu hình ====
 image_size = 128
-n_clusters = 1024
+n_clusters = 128
 similarity_threshold = 0.8
 base_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(base_dir, "features_faiss_more_data/sift/kmeans_model.onnx")
