@@ -1,107 +1,138 @@
 import os
-import json
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+import csv
+import unicodedata
 from collections import Counter
 
-from langchain_community.llms import CTransformers
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-
 # ========== Cấu hình ==========
-VECTOR_PATH = "vector_db/vector_similarity.faiss"
-METADATA_PATH = "vector_db/movie_metadata.json"
-EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
-GGUF_MODEL_PATH = "models_llm/vinallama-7b-chat_q5_0.gguf"
-similarity_threshold = 0.4
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+VECTOR_DIR = "vector_db"
+LABELS_PATH = os.path.join(VECTOR_DIR, "movie_labels.npy")
+INDEX_PATH = os.path.join(VECTOR_DIR, "movie_index.faiss")
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+ALL_GENRES_PATH = os.path.join(VECTOR_DIR, "all_genres.csv")
+ALL_ACTORS_PATH = os.path.join(VECTOR_DIR, "all_actors.csv")
+ALL_DIRECTORS_PATH = os.path.join(VECTOR_DIR, "all_directors.csv")
+LABEL_MAPPING_PATH = os.path.join(VECTOR_DIR, "label_mapping.csv")
+similarity_threshold = 0.6
 
-# ========== Load model nhúng ==========
-model = SentenceTransformer(EMBEDDING_MODEL)
-model.max_seq_length = 2048
-
-# ========== Chuẩn hóa vector ==========
+# ========== Các hàm cần thiết ==========
 def l2_normalize(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     return vectors / (norms + 1e-10)
 
-# ========== Load FAISS & metadata ==========
-if not os.path.exists(VECTOR_PATH) or not os.path.exists(METADATA_PATH):
-    raise FileNotFoundError("❌ FAISS index hoặc metadata chưa tồn tại.")
+def remove_accents(text):
+    return ''.join(c for c in unicodedata.normalize('NFD', text)
+                   if unicodedata.category(c) != 'Mn')
 
-index = faiss.read_index(VECTOR_PATH)
-with open(METADATA_PATH, "r", encoding="utf-8") as f:
-    metadata = json.load(f)
+# ========== Load từ CSV ==========
+def load_keywords_from_csv(path):
+    keywords = set()
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                kw = line.strip()
+                if kw:
+                    keywords.add(remove_accents(kw.lower()))
+    return keywords
 
-# ========== Load mô hình PhoGPT ==========
-if not os.path.exists(GGUF_MODEL_PATH):
-    raise FileNotFoundError("❌ PhoGPT model chưa được cài đặt.")
+def load_movie_labels(path):
+    if os.path.exists(path):
+        return np.load(path).tolist()
+    return []
 
-llm = CTransformers(
-    model=GGUF_MODEL_PATH,
-    model_type="llama",
-    config={"max_new_tokens": 512, "temperature": 0.01}
-)
+def load_label_mapping(path):
+    mapping = {}
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                label = int(row["label"])
+                name = row["name"]
+                mapping[label] = name
+    return mapping
 
-# ========== Tạo prompt phân tích ==========
-prompt_template = PromptTemplate(
-    input_variables=["query"],
-    template="""
-        Bạn là trợ lý AI. Hãy phân tích mô tả sau và tách nó thành các phần cụ thể như:
-        - Diễn viên:
-        - Thể loại:
-        - Đạo diễn:
-        - Nội dung:
-        - Năm phát hành (nếu có):
-        
-        Nếu không có phần nào, hãy để trống phần đó.
-        
-        Mô tả: "{query}"
-        ---
-        """
-    )
+all_genres = load_keywords_from_csv(ALL_GENRES_PATH)
+all_actors = load_keywords_from_csv(ALL_ACTORS_PATH)
+all_directors = load_keywords_from_csv(ALL_DIRECTORS_PATH)
+movie_labels = load_movie_labels(LABELS_PATH)
+label_mapping = load_label_mapping(LABEL_MAPPING_PATH)  # <-- load mapping từ file CSV
 
-chain = LLMChain(prompt=prompt_template, llm=llm)
+# ========== Load mô hình và FAISS ==========
+model = SentenceTransformer(EMBEDDING_MODEL)
+index = faiss.read_index(INDEX_PATH)
 
-# ========== Nhận truy vấn người dùng ==========
-query = input("🔍 Nhập nội dung mô tả phim: ").strip()
-structured_info = chain.run(query)
+# ========== Tìm phim theo keyword ==========
+def search_movies_by_keyword(keyword, top_k=5):
+    keyword_clean = remove_accents(keyword.strip().lower())
+    query_vector = model.encode([keyword_clean])
+    query_vector = l2_normalize(query_vector)
+    query_vector = query_vector.astype("float32")
+    distances, indices = index.search(query_vector, top_k)
+    results = []
 
-print("\n📋 Truy vấn đã phân tích:\n", structured_info)
+    euclidean_dist_squared = distances[0][0]
+    similarity_score = 1 - euclidean_dist_squared / 2
 
-# ========== Chuyển truy vấn phân tích thành văn bản chuẩn để nhúng ==========
-def convert_to_clean_text(info_str):
-    lines = info_str.strip().splitlines()
-    final_text = ""
-    for line in lines:
-        if ":" in line:
-            key, value = line.split(":", 1)
-            final_text += f"{key.strip().capitalize()}: {value.strip()}. "
-    return final_text.strip()
+    if similarity_score < similarity_threshold:
+        return []
 
-processed_query = convert_to_clean_text(structured_info)
-query_vector = l2_normalize(model.encode([processed_query]).astype("float32"))
-D, I = index.search(query_vector, k=5)
+    for idx in indices[0]:
+        if 0 <= idx < len(movie_labels):
+            movie_id = movie_labels[idx]
+            movie_name = label_mapping.get(movie_id, f"Phim ID {movie_id} (chưa có tên)")
+            results.append(movie_name)
+    return results
 
-# ========== Tính điểm tương đồng ==========
-euclidean_dist_squared = D[0][0]
-similarity_score = 1 - euclidean_dist_squared / 2
+# ========== Lấy từ khóa trong truy vấn ==========
+def extract_keywords_from_query(query):
+    query_clean = remove_accents(query.lower())
+    found_keywords = set()
 
-if similarity_score < similarity_threshold:
-    print("Threshold:", similarity_score)
-    print(f"❌ Không tìm thấy phim nào phù hợp với truy vấn '{query}'.")
+    for kw in all_genres:
+        if kw in query_clean:
+            found_keywords.add(kw)
+    for kw in all_actors:
+        if kw in query_clean:
+            found_keywords.add(kw)
+    for kw in all_directors:
+        if kw in query_clean:
+            found_keywords.add(kw)
+
+    return list(found_keywords)
+
+# ========== Chương trình chính ==========
+query_raw = input("🔍 Nhập nội dung mô tả phim: ").strip()
+query = remove_accents(query_raw.lower())
+keywords = extract_keywords_from_query(query)
+
+if not keywords:
+    print("⚠️ Không tìm thấy từ khóa phù hợp trong truy vấn.")
+    print("👉 Đang thực hiện truy vấn toàn văn bằng chính mô tả bạn nhập...")
+
+    results = search_movies_by_keyword(query_raw, top_k=1)
+    if results:
+        print(f"\n🎬 Phim được đề xuất gần nhất với mô tả bạn cung cấp: {results[0]}")
+    else:
+        print("❌ Không tìm thấy phim phù hợp với mô tả bạn nhập.")
     exit()
 
-# ========== Xử lý kết quả ==========
-names = [metadata[idx]["movie_name"] for idx in I[0]]
-counter = Counter(names)
-most_common = counter.most_common(1)[0]
+print(f"✅ Tìm thấy các từ khóa trong truy vấn: {keywords}")
 
-if most_common[1] >= (len(names) / 2):
-    chosen_movie = most_common[0]
-else:
-    chosen_movie = names[0]
+all_found_movies = []
 
-print("Threshold:", similarity_score)
-print(f"🎬 Phim được đề xuất: {chosen_movie}")
+for kw in keywords:
+    movies = search_movies_by_keyword(kw, top_k=5)
+    print(f"  - Kết quả tìm kiếm với '{kw}': {movies}")
+    all_found_movies.extend(movies)
+
+counter = Counter(all_found_movies)
+most_common = counter.most_common(1)
+
+if not most_common:
+    print(f"❌ Không tìm thấy phim phù hợp với truy vấn '{query_raw}'.")
+    exit()
+
+chosen_movie, count = most_common[0]
+print(f"\n🎬 Phim được đề xuất nhiều nhất dựa trên các từ khóa: {chosen_movie} (xuất hiện {count} lần)")
