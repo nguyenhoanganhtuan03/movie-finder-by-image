@@ -6,3 +6,4 @@ backend/app/models/features_knn_more_data
 backend/app/uploaded_videos
 backend/app/uploads
 backend/app/models/models_nlp/models_llm
+backend/app/models/models_nlp/vector_db
