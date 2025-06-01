@@ -1,63 +1,70 @@
 import os
+import csv
 import numpy as np
 import faiss
-import csv
-import unicodedata
 from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
+from pyvi.ViTokenizer import tokenize
 
-# ========== Cấu hình ==========
+# ========== CẤU HÌNH ==========
 VECTOR_DIR = "vector_db"
-LABELS_PATH = os.path.join(VECTOR_DIR, "movie_labels.npy")
 INDEX_PATH = os.path.join(VECTOR_DIR, "movie_index.faiss")
-ALL_GENRES_PATH = os.path.join(VECTOR_DIR, "all_genres.csv")
-ALL_ACTORS_PATH = os.path.join(VECTOR_DIR, "all_actors.csv")
-ALL_DIRECTORS_PATH = os.path.join(VECTOR_DIR, "all_directors.csv")
-LABEL_MAPPING_PATH = os.path.join(VECTOR_DIR, "label_mapping.csv")
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+PROMPT_MAPPING_PATH = os.path.join(VECTOR_DIR, "prompt_mapping.csv")
+METADATA_PATH = os.path.join(VECTOR_DIR, "metadata.csv")
+EMBEDDING_MODEL = "VoVanPhuc/sup-SimCSE-VietNamese-phobert-base"
 DB_NAME = "movie_database"
 COLLECTION_NAME = "movies"
 
-# ========== Chuẩn bị ==========
+# ========== CHUẨN BỊ ==========
 os.makedirs(VECTOR_DIR, exist_ok=True)
 client = MongoClient("mongodb://localhost:27017/")
 collection = client[DB_NAME][COLLECTION_NAME]
 model = SentenceTransformer(EMBEDDING_MODEL)
 
+# ========== HÀM TIỆN ÍCH ==========
+def embed_text(text):
+    text = text.strip().lower()
+    sentences = [tokenize(text)]
+    return model.encode(sentences, convert_to_numpy=True)[0]
+
 def l2_normalize(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     return vectors / (norms + 1e-10)
 
-def remove_accents(text):
-    return ''.join(c for c in unicodedata.normalize('NFD', text)
-                   if unicodedata.category(c) != 'Mn')
+def truncate_prompt(prompt, max_chars=6000):
+    return prompt[:max_chars]
 
-def embed_text(text):
-    text = remove_accents(text.strip().lower())
-    return model.encode(text, convert_to_numpy=True)
-
-def save_set_to_csv(path, data_set):
+def save_prompt_mapping(path, prompt_list):
     with open(path, mode='w', encoding='utf-8', newline='') as f:
         writer = csv.writer(f)
-        for item in sorted(data_set):
-            writer.writerow([item])
+        writer.writerow(["index", "prompt"])
+        for idx, prompt in enumerate(prompt_list):
+            writer.writerow([idx, prompt])
 
-def save_dict_to_csv(path, mapping):
+def save_metadata_csv(path, metadata_list):
     with open(path, mode='w', encoding='utf-8', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["label", "name"])
-        for label, name in sorted(mapping.items()):
-            writer.writerow([label, name])
+        writer.writerow([
+            "index", "name", "genres", "duration", "director",
+            "actors", "year", "description", "full_prompt"
+        ])
+        for idx, item in enumerate(metadata_list):
+            writer.writerow([
+                idx,
+                item.get("name", ""),
+                item.get("genres", ""),
+                item.get("duration", ""),
+                item.get("director", ""),
+                item.get("actors", ""),
+                item.get("year", ""),
+                item.get("description", ""),
+                item.get("full_prompt", "")
+            ])
 
-# ========== Xử lý dữ liệu ==========
+# ========== XỬ LÝ DỮ LIỆU ==========
 vectors = []
-labels = []
-all_genres = set()
-all_actors = set()
-all_directors = set()
-movie_mapping = {}       # label -> name
-name_to_id = {}          # name -> label
-label_counter = 1
+prompts = []
+metadata_list = []
 
 for doc in collection.find():
     try:
@@ -65,69 +72,52 @@ for doc in collection.find():
         if not name:
             continue
 
-        if name not in name_to_id:
-            name_to_id[name] = label_counter
-            movie_mapping[label_counter] = name
-            label_counter += 1
+        genres = ', '.join(doc.get("genre", []))
+        duration = str(doc.get("duration", "")).strip()
+        director = doc.get("director", "").strip()
+        actors = ', '.join(doc.get("actor", []))
+        year = str(doc.get("year_of_release", "")).strip()
+        description = doc.get("describe", "").strip()
 
-        label = name_to_id[name]
+        # Tạo prompt mô tả
+        prompt = (
+            f"{name} là một bộ phim thể loại {genres}"
+            f"{', kéo dài ' + duration + ' phút' if duration else ''}"
+            f"{', được đạo diễn bởi ' + director if director else ''}"
+            f"{', với sự tham gia của ' + actors if actors else ''}"
+            f"{', ra mắt vào năm ' + year if year else ''}. "
+            f"{'Nội dung phim: ' + description if description else ''}"
+        ).strip()
+        prompt = truncate_prompt(prompt)
 
-        # Genres
-        for genre in doc.get("genre", []):
-            genre_clean = remove_accents(genre.lower())
-            all_genres.add(genre_clean)
-            vectors.append(embed_text(genre))
-            labels.append(label)
+        vector = embed_text(prompt)
 
-        # Duration
-        duration = doc.get("duration")
-        if duration:
-            vectors.append(embed_text(str(duration)))
-            labels.append(label)
-
-        # Director
-        director = doc.get("director")
-        if director:
-            director_clean = remove_accents(director.lower())
-            all_directors.add(director_clean)
-            vectors.append(embed_text(director))
-            labels.append(label)
-
-        # Actors
-        for actor in doc.get("actor", []):
-            actor_clean = remove_accents(actor.lower())
-            all_actors.add(actor_clean)
-            vectors.append(embed_text(actor))
-            labels.append(label)
-
-        # Year of release
-        year = doc.get("year_of_release")
-        if year:
-            vectors.append(embed_text(str(year)))
-            labels.append(label)
-
-        # Description
-        describe = doc.get("describe")
-        if describe:
-            vectors.append(embed_text(describe))
-            labels.append(label)
+        prompts.append(prompt)
+        vectors.append(vector)
+        metadata_list.append({
+            "name": name,
+            "genres": genres,
+            "duration": duration,
+            "director": director,
+            "actors": actors,
+            "year": year,
+            "description": description,
+            "full_prompt": prompt
+        })
 
     except Exception as e:
         print(f"Lỗi khi xử lý phim '{doc.get('name', 'Unknown')}': {e}")
 
-# ========== Ghi FAISS index ==========
-embedding_matrix = l2_normalize(np.array(vectors).astype("float32"))
-labels_array = np.array(labels)
-np.save(LABELS_PATH, labels_array)
+# ========== CHUẨN HÓA & LƯU VÀO FAISS ==========
+embedding_matrix = np.array(vectors).astype("float32")
+embedding_matrix = l2_normalize(embedding_matrix)
 index = faiss.IndexFlatL2(embedding_matrix.shape[1])
 index.add(embedding_matrix)
 faiss.write_index(index, INDEX_PATH)
 
-# ========== Lưu dữ liệu ==========
-save_set_to_csv(ALL_GENRES_PATH, all_genres)
-save_set_to_csv(ALL_ACTORS_PATH, all_actors)
-save_set_to_csv(ALL_DIRECTORS_PATH, all_directors)
-save_dict_to_csv(LABEL_MAPPING_PATH, movie_mapping)
+# ========== LƯU FILE ==========
+save_prompt_mapping(PROMPT_MAPPING_PATH, prompts)
+save_metadata_csv(METADATA_PATH, metadata_list)
 
-print(f"Số lượng phim: {len(movie_mapping)}")
-print("✅ Đã lưu FAISS index, vectors, labels và danh sách keywords.")
+print(f"Số lượng phim đã xử lý: {len(prompts)}")
+print("✅ Đã chuẩn hóa vector và lưu FAISS index, prompt mapping, metadata.")
