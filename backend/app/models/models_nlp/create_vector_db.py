@@ -8,10 +8,11 @@ from pyvi.ViTokenizer import tokenize
 
 # ========== CẤU HÌNH ==========
 VECTOR_DIR = "vector_db"
-INDEX_PATH = os.path.join(VECTOR_DIR, "movie_index.faiss")
+INDEX_PATH = os.path.join(VECTOR_DIR, "index_movie.faiss")
 PROMPT_MAPPING_PATH = os.path.join(VECTOR_DIR, "prompt_mapping.csv")
 METADATA_PATH = os.path.join(VECTOR_DIR, "metadata.csv")
-EMBEDDING_MODEL = "VoVanPhuc/sup-SimCSE-VietNamese-phobert-base"
+EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
+# EMBEDDING_MODEL = "VoVanPhuc/sup-SimCSE-VietNamese-phobert-base"
 DB_NAME = "movie_database"
 COLLECTION_NAME = "movies"
 
@@ -20,12 +21,17 @@ os.makedirs(VECTOR_DIR, exist_ok=True)
 client = MongoClient("mongodb://localhost:27017/")
 collection = client[DB_NAME][COLLECTION_NAME]
 model = SentenceTransformer(EMBEDDING_MODEL)
+model.max_seq_length = 2048
 
 # ========== HÀM TIỆN ÍCH ==========
+# def embed_text(text):
+#     text = text.strip().lower()
+#     sentences = [tokenize(text)]
+#     return model.encode(sentences, convert_to_numpy=True)[0]
+
 def embed_text(text):
     text = text.strip().lower()
-    sentences = [tokenize(text)]
-    return model.encode(sentences, convert_to_numpy=True)[0]
+    return model.encode(text, convert_to_numpy=True)
 
 def l2_normalize(vectors):
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)

@@ -11,7 +11,7 @@ from langchain.chains import RetrievalQA
 # ==== CẤU HÌNH ====
 VECTOR_DIR = "vector_db/movie_vector_db"
 MODELS_LLM_DIR = "models_llm"
-EMBEDDING_MODEL = "VoVanPhuc/sup-SimCSE-VietNamese-phobert-base"
+EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 LLM_MODEL_PATH = os.path.join(MODELS_LLM_DIR, "vinallama-7b-chat_q5_0.gguf")
 
 # ==== LOAD MODEL EMBEDDING & LLM ====
@@ -29,13 +29,11 @@ class SentenceTransformerEmbeddingWrapper(Embeddings):
         self.model = model
 
     def embed_documents(self, texts):
-        tokenized = [tokenize(t.strip().lower()) for t in texts]
-        embeddings = self.model.encode(tokenized, convert_to_numpy=True)
+        embeddings = self.model.encode(texts, convert_to_numpy=True)
         return embeddings.tolist()
 
     def embed_query(self, text):
-        tokenized = tokenize(text.strip().lower())
-        embedding = self.model.encode([tokenized], convert_to_numpy=True)[0]
+        embedding = self.model.encode([text], convert_to_numpy=True)[0]
         return embedding.tolist()
 
 embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
@@ -43,16 +41,8 @@ embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
 # ==== PROMPT TEMPLATE VỚI 2 BIẾN: query và context ====
 prompt_template = PromptTemplate(
     input_variables=["context", "question"],
-    template="""
-        Bạn là trợ lý AI. Hãy trả lời người dùng một cách chính xác và có thể tin cậy. 
-        Chỉ trả lời 1 lần duy nhất. Không dài dòng.
-        Nếu bạn không biết câu trả lời, hãy nói rằng bạn không biết.
-
-        Thông tin liên quan:
-        {context}
-
-        Câu hỏi: {question}
-        """
+    template="""<|im_start|>system\nSử dụng thông tin sau đây để trả lời câu hỏi. Chỉ trả lời 1 lần duy nhất. Không dài dòng. Nếu bạn không biết câu trả lời, hãy nói không biết, đừng cố tạo ra câu trả lời\n
+    {context}<|im_end|>\n<|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant"""
 )
 
 # ==== TẠO CHAIN TRẢ LỜI DỰA TRÊN VECTORSTORE ====
