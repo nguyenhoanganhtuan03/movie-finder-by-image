@@ -164,7 +164,7 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-if __name__ == "__main__":
-    input_path = os.path.join(base_dir, "img_test/elce.jpg")
-    predicted_film = predict_film_auto(input_path)
-    print(f"🎬 Dự đoán: {predicted_film}")
+# if __name__ == "__main__":
+#     input_path = os.path.join(base_dir, "img_test/gngp.png")
+#     predicted_film = predict_film_auto(input_path)
+#     print(f"🎬 Dự đoán: {predicted_film}")
