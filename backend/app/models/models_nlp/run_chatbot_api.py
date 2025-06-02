@@ -16,7 +16,7 @@ GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini
 
 # ==== LOAD MODEL EMBEDDING ====
 model = SentenceTransformer(EMBEDDING_MODEL)
-
+model.max_seq_length = 2048
 
 # ========== WRAPPER EMBEDDING CHO LANGCHAIN ==========
 class SentenceTransformerEmbeddingWrapper(Embeddings):

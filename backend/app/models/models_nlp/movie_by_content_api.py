@@ -68,18 +68,6 @@ def load_prompt_mapping(path):
 
 prompt_mapping = load_prompt_mapping(PROMPT_MAPPING_PATH)
 
-# ========== Hàm tìm phim tương tự ==========
-def find_similar_movies(query, top_k=5):
-    query_vec = l2_normalize(embed_text(query).astype('float32'))
-    distances, indices = index.search(query_vec, top_k)
-    results = []
-    for dist, idx in zip(distances[0], indices[0]):
-        similarity = 1 - dist / 2
-        if similarity >= SIMILARITY_THRESHOLD:
-            movie_name = metadata_mapping.get(idx, f"Phim có ID {idx}")
-            results.append((movie_name, similarity))
-    return results
-
 # ========== HÀM GỌI GEMINI API ==========
 def call_gemini_api(prompt, api_key=GEMINI_API_KEY):
     """
