@@ -19,7 +19,7 @@ os.makedirs(VECTOR_DIR, exist_ok=True)
 client = MongoClient(MONGO_URI)
 collection = client[DB_NAME][COLLECTION_NAME]
 model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-model.max_seq_length = 512
+model.max_seq_length = 2048
 
 # ========== WRAPPER EMBEDDING CHO LANGCHAIN ==========
 class SentenceTransformerEmbeddingWrapper(Embeddings):
@@ -39,7 +39,7 @@ embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
 # ========== TẠO VECTOR DB ==========
 def create_db():
     prompts = []
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=50)
 
     for doc in collection.find():
         try:

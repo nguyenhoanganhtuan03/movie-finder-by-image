@@ -3,6 +3,14 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/models/features_faiss" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/models/features_faiss_more_data" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/models/img_test" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/models/models_nlp/models_llm" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/models/models_nlp/vector_db" />
+      <excludeFolder url="file://$MODULE_DIR$/backend/app/uploads" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/admin/node_modules" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/client/node_modules" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.10 (LVTN_Search_Films_FAISS)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
