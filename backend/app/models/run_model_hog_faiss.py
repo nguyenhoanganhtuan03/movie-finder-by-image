@@ -2,10 +2,8 @@ import os
 import time
 import numpy as np
 import cv2
-import traceback
 from collections import Counter
 
-from tensorflow.keras.preprocessing import image
 from skimage.feature import hog
 from skimage import color
 import faiss
@@ -26,15 +24,8 @@ if not os.path.exists(label_path):
     exit()
 
 try:
-    # Load FAISS index
     index = faiss.read_index(index_path)
-
-    # Load labels
     index_labels = np.load(label_path)
-
-    print(f"✅ FAISS index đã được tải thành công!")
-    print(f"   - Số lượng vectors: {index.ntotal}")
-    print(f"   - Kích thước vector: {index.d}")
 
 except Exception as e:
     print(f"❌ Lỗi khi tải models: {e}")
