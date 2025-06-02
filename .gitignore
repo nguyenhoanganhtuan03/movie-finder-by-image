@@ -7,3 +7,4 @@ backend/app/uploaded_videos
 backend/app/uploads
 backend/app/models/models_nlp/models_llm
 backend/app/models/models_nlp/vector_db
+backend/app/models/models_nlp/.env
