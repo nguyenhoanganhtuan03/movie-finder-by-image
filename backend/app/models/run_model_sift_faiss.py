@@ -57,9 +57,9 @@ classes = {
     11: "Chuyện Tết", 12: "Cô Ba Sài Gòn", 13: "Đào, Phở Và Piano", 14: "Đất Rừng Phương Nam", 15: "Địa Đạo",
     16: "Định Mệnh Thiên Ý", 17: "Đôi Mắt Âm Dương", 18: "Em Chưa 18", 19: "Em Là Của Em", 20: "Gái Già Lắm Chiêu 3",
     21: "Giả Nghèo Gặp Phật", 22: "Hẻm Cụt", 23: "Hoán Đổi", 24: "Kẻ Ẩn Danh", 25: "Kẻ Ăn Hồn",
-    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Linh Miêu Quỷ Nhập Tràng", 29: "Lộ Mặt", 30: "Ma Da",
+    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Linh Miêu: Quỷ Nhập Tràng", 29: "Lộ Mặt", 30: "Ma Da",
     31: "Mắt Biếc", 32: "Nghề Siêu Dễ", 33: "Những Nụ Hôn Rực Rỡ", 34: "Ông Ngoại Tuổi 30", 35: "Pháp Sư Tập Sự",
-    36: "Quý Cô Thừa Kế", 37: "Ra Mắt Gia Tiên", 38: "Siêu Lừa Gặp Siêu Lầy", 39: "Siêu Trợ Lý", 40: "Tấm Cám Chuyện Chưa Kể",
+    36: "Quý Cô Thừa Kế", 37: "Ra Mắt Gia Tiên", 38: "Siêu Lừa Gặp Siêu Lầy", 39: "Siêu Trợ Lý", 40: "Tấm Cám: Chuyện Chưa Kể",
     41: "Taxi Em Tên Gì", 42: "The Call", 43: "Thiên Mệnh Anh Hùng", 44: "Tiểu Thư Và Ba Đầu Gấu", 45: "Trên Bàn Nhậu Dưới Bàn Mưu",
     46: "Khác"
 }
