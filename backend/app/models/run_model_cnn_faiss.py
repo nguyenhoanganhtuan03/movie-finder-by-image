@@ -51,7 +51,9 @@ def l2_normalize(vectors):
 # ==== Hàm dự đoán ====
 # Hàm xử lý ảnh
 def predict_film_from_image(img_path):
-    img = image.load_img(img_path, target_size=(image_size, image_size))
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, (image_size, image_size))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -162,7 +164,7 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-# if __name__ == "__main__":
-#     input_path = os.path.join(base_dir, "img_test/chu_tich_giao_hang.mp4")
-#     predicted_film = predict_film_auto(input_path)
-#     print(f"🎬 Dự đoán: {predicted_film}")
+if __name__ == "__main__":
+    input_path = os.path.join(base_dir, "img_test/elce.jpg")
+    predicted_film = predict_film_auto(input_path)
+    print(f"🎬 Dự đoán: {predicted_film}")

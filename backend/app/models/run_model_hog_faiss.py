@@ -79,7 +79,9 @@ def extract_hog_features(gray, img_path=None):
 
 # ==== Hàm dự đoán từ ảnh ====
 def predict_film_from_image(img_path):
-    img = image.load_img(img_path, target_size=(image_size, image_size))
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, (image_size, image_size))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_array = image.img_to_array(img)
     gray = color.rgb2gray(img_array)
     feature = extract_hog_features(gray, img_path)
