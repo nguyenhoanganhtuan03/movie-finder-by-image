@@ -179,6 +179,8 @@ while True:
         break
 
     prompt, movies = search_movies_by_user_query(user_input)
+    # name_movies = [name for name, _ in movies]
+    # print(name_movies)
 
     print("\n🧠 Prompt dùng để truy vấn:", prompt)
     if movies:
