@@ -3,7 +3,7 @@ import time
 import numpy as np
 import faiss
 import cv2
-from collections import Counter
+from collections import Counter, OrderedDict
 
 from tensorflow.keras.applications import ResNet50, VGG16
 # from tensorflow.keras.applications.resnet50 import preprocess_input
@@ -30,13 +30,14 @@ index = faiss.read_index(index_path)
 index_labels = np.load(label_path)
 
 # ==== Danh sách phim (mapping) ====
+# Chú ý sửa Linh Miêu: Quỷ Nhập Tràng --> Quỷ Cẩu
 classes = {
     1: "21 Ngày Yêu Em", 2: "4 Năm 2 Chàng 1 Tình Yêu", 3: "Ăn Tết Bên Cồn", 4: "Bẫy Ngọt Ngào", 5: "Bệnh Viện Ma",
     6: "Bí Mật Lại Bị Mất", 7: "Bí Mật Trong Sương Mù", 8: "Bộ Tứ Oan Gia", 9: "Chờ Em Đến Ngày Mai", 10: "Chủ Tịch Giao Hàng",
     11: "Chuyện Tết", 12: "Cô Ba Sài Gòn", 13: "Đào, Phở Và Piano", 14: "Đất Rừng Phương Nam", 15: "Địa Đạo",
     16: "Định Mệnh Thiên Ý", 17: "Đôi Mắt Âm Dương", 18: "Em Chưa 18", 19: "Em Là Của Em", 20: "Gái Già Lắm Chiêu 3",
     21: "Giả Nghèo Gặp Phật", 22: "Hẻm Cụt", 23: "Hoán Đổi", 24: "Kẻ Ẩn Danh", 25: "Kẻ Ăn Hồn",
-    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Linh Miêu: Quỷ Nhập Tràng", 29: "Lộ Mặt", 30: "Ma Da",
+    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Quỷ Cẩu", 29: "Lộ Mặt", 30: "Ma Da",
     31: "Mắt Biếc", 32: "Nghề Siêu Dễ", 33: "Những Nụ Hôn Rực Rỡ", 34: "Ông Ngoại Tuổi 30", 35: "Pháp Sư Tập Sự",
     36: "Quý Cô Thừa Kế", 37: "Ra Mắt Gia Tiên", 38: "Siêu Lừa Gặp Siêu Lầy", 39: "Siêu Trợ Lý", 40: "Tấm Cám: Chuyện Chưa Kể",
     41: "Taxi Em Tên Gì", 42: "The Call", 43: "Thiên Mệnh Anh Hùng", 44: "Tiểu Thư Và Ba Đầu Gấu", 45: "Trên Bàn Nhậu Dưới Bàn Mưu",
@@ -61,36 +62,43 @@ def predict_film_from_image(img_path):
     feature = model.predict(x, verbose=0)
     feature = l2_normalize(feature)
     feature = feature.astype(np.float32)
-    D, I = index.search(feature, 1)
 
-    euclidean_dist_squared = D[0][0]
-    similarity_score = 1 - euclidean_dist_squared / 2  # Chuyển đổi khoảng cách thành cosine similarity
+    k = 5
+    D, I = index.search(feature, k)
 
-    # Nếu similarity dưới ngưỡng, gán nhãn "Khác"
-    if similarity_score < similarity_threshold:
-        pred_label = 46  # Nhãn "Khác"
-    else:
-        # Lấy nhãn dự đoán từ FAISS
-        pred_label_data = index_labels[I[0][0]]
-        if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
-            pred_label = int(np.argmax(pred_label_data)) + 1
+    similarity_scores = 1 - D[0] / 2
+
+    result_labels = []
+    seen_labels = set()
+
+    for idx, sim in zip(I[0], similarity_scores):
+        if sim < similarity_threshold:
+            pred_label = 46
         else:
-            pred_label = int(pred_label_data)
+            pred_label_data = index_labels[idx]
+            if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
+                pred_label = int(np.argmax(pred_label_data)) + 1
+            else:
+                pred_label = int(pred_label_data)
 
-    film_name = classes.get(pred_label, "Không xác định")
-    return film_name
+        film_name = classes.get(pred_label, "Không xác định")
+
+        if film_name not in seen_labels:
+            result_labels.append(film_name)
+            seen_labels.add(film_name)
+
+    return result_labels
 
 # Hàm xử lý video
 def predict_film_from_video(video_path):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        return "❌ Không mở được video."
+        return ["❌ Không mở được video."]
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if total_frames == 0:
-        return "❌ Video không có frame nào."
+        return ["❌ Video không có frame nào."]
 
-    # 5 frame
     frame_indices = [
         0,
         total_frames // 4,
@@ -98,13 +106,15 @@ def predict_film_from_video(video_path):
         (3 * total_frames) // 4,
         total_frames - 1
     ]
-    predictions = []
+    
+    film_occurrences = []  # Lưu thứ tự xuất hiện
+    film_counts = Counter()
 
     for idx in frame_indices:
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ret, frame = cap.read()
         if not ret:
-            continue  # Bỏ qua nếu không đọc được frame
+            continue
 
         frame = cv2.resize(frame, (image_size, image_size))
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -114,32 +124,43 @@ def predict_film_from_video(video_path):
         feature = model.predict(x, verbose=0)
         feature = l2_normalize(feature)
         feature = feature.astype(np.float32)
-        D, I = index.search(feature, 1)
 
-        euclidean_dist_squared = D[0][0]
-        similarity_score = 1 - euclidean_dist_squared / 2  # Chuyển đổi khoảng cách thành cosine similarity
+        k = 5
+        D, I = index.search(feature, k)
+        similarity_scores = 1 - D[0] / 2
 
-        # Nếu similarity dưới ngưỡng, gán nhãn "Khác"
-        if similarity_score < similarity_threshold:
-            pred_label = 46
-        else:
-            # Lấy nhãn dự đoán từ FAISS
-            pred_label_data = index_labels[I[0][0]]
-            if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
-                pred_label = int(np.argmax(pred_label_data)) + 1
+        seen_in_frame = set()
+        for idx_db, sim in zip(I[0], similarity_scores):
+            if sim < similarity_threshold:
+                pred_label = 46
             else:
-                pred_label = int(pred_label_data)
+                pred_label_data = index_labels[idx_db]
+                if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
+                    pred_label = int(np.argmax(pred_label_data)) + 1
+                else:
+                    pred_label = int(pred_label_data)
 
-        predictions.append(pred_label)
+            film_name = classes.get(pred_label, "Không xác định")
+
+            if film_name not in seen_in_frame:
+                seen_in_frame.add(film_name)
+                film_counts[film_name] += 1
+                film_occurrences.append(film_name)
 
     cap.release()
 
-    if not predictions:
-        return "❌ Không đọc được frame hợp lệ nào."
+    if not film_counts:
+        return ["❌ Không đọc được frame hợp lệ nào."]
 
-    most_common_id = Counter(predictions).most_common(1)[0][0]
-    film_name = classes.get(most_common_id, "Không xác định")
-    return film_name
+    # Sắp xếp theo: số lần xuất hiện giảm dần, sau đó theo thứ tự xuất hiện đầu tiên
+    unique_ordered_films = list(OrderedDict.fromkeys(film_occurrences))
+    sorted_films = sorted(
+        film_counts.items(),
+        key=lambda item: (-item[1], unique_ordered_films.index(item[0]))
+    )
+
+    result = [film for film, _ in sorted_films[:4]]
+    return result
 
 
 # Hàm tự động nhận biết loại file và xử lý
@@ -164,7 +185,7 @@ def predict_film_auto(input_path):
         return f"❌ Lỗi khi xử lý: {e}"
 
 # ==== Test ====
-# if __name__ == "__main__":
-#     input_path = os.path.join(base_dir, "img_test/gngp.png")
-#     predicted_film = predict_film_auto(input_path)
-#     print(f"🎬 Dự đoán: {predicted_film}")
+if __name__ == "__main__":
+    input_path = os.path.join(base_dir, "img_test/mada.mp4")
+    predicted_film = predict_film_auto(input_path)
+    print(f"🎬 Dự đoán: {predicted_film}")

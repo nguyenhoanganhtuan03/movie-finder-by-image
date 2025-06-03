@@ -110,18 +110,22 @@ async def search_movie_by_file(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Upload failed: {str(e)}"})
 
-    result_name = predict_film_auto(file_path)
-    movies = await search_movies_by_name(result_name)
+    predicted_names = predict_film_auto(file_path)  # Giờ trả về list[str]
 
-    if not movies:
+    results = []
+    for name in predicted_names:
+        matched = await search_movies_by_name(name)
+        results.extend(matched)
+
+    if not results:
         return {
-            "predicted_name": "Không biết",
+            "predicted_names": predicted_names,
             "results": []
         }
 
     return {
-        "predicted_name": result_name,
-        "results": movies
+        "predicted_names": predicted_names,
+        "results": list(results)
     }
 
 # Route tìm kiếm phim theo thể loại

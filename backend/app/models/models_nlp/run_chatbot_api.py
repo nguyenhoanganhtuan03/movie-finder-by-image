@@ -8,7 +8,8 @@ from langchain.embeddings.base import Embeddings
 
 # ==== CẤU HÌNH ====
 load_dotenv()
-VECTOR_DIR = "vector_db/movie_vector_db"
+VECTOR_DIR = "vector_db"
+MOVIE_VECTOR_DB = os.path.join(VECTOR_DIR, "movie_vector_db")
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -17,6 +18,7 @@ GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini
 # ==== LOAD MODEL EMBEDDING ====
 model = SentenceTransformer(EMBEDDING_MODEL)
 model.max_seq_length = 2048
+
 
 # ========== WRAPPER EMBEDDING CHO LANGCHAIN ==========
 class SentenceTransformerEmbeddingWrapper(Embeddings):
@@ -87,9 +89,9 @@ def call_gemini_api(prompt, api_key):
 
 
 # ========== TẠO PROMPT TEMPLATE ==========
-def create_qa_prompt(context, question, chat_history=None):
+def create_qa_prompt(context, question, chat_history=None, previous_contexts=None):
     """
-    Tạo prompt với lịch sử chat (nếu có)
+    Tạo prompt với lịch sử chat và context từ các tìm kiếm trước
     """
     history_text = ""
     if chat_history:
@@ -98,18 +100,25 @@ def create_qa_prompt(context, question, chat_history=None):
             history_text += f"{i}. Hỏi: {q}\n   Trả lời: {a}\n"
         history_text += "\n"
 
+    # Thêm context từ các tìm kiếm trước
+    previous_context_text = ""
+    if previous_contexts:
+        previous_context_text = "\nTHÔNG TIN TỪ CÁC TÌM KIẾM TRƯỚC:\n"
+        for i, prev_context in enumerate(previous_contexts, 1):
+            previous_context_text += f"Context {i}:\n{prev_context}\n\n"
+
     prompt = f"""Bạn là một trợ lý AI chuyên trả lời câu hỏi về phim ảnh. Sử dụng thông tin sau đây để trả lời câu hỏi một cách chính xác và ngắn gọn.
 
-THÔNG TIN THAM KHẢO:
+THÔNG TIN THAM KHẢO CHO CÂU HỎI HIỆN TẠI:
 {context}
-{history_text}
+{previous_context_text}{history_text}
 CÂU HỎI HIỆN TẠI: {question}
 
 HƯỚNG DẪN:
-- Ưu tiên sử dụng thông tin từ "THÔNG TIN THAM KHẢO"
-- Có thể tham khảo lịch sử chat để hiểu ngữ cảnh
+- Ưu tiên sử dụng thông tin từ "THÔNG TIN THAM KHẢO CHO CÂU HỎI HIỆN TẠI"
+- Có thể tham khảo thông tin từ các tìm kiếm trước và lịch sử chat để hiểu ngữ cảnh tốt hơn
 - Trả lời ngắn gọn, chính xác
-- Nếu câu hỏi liên quan đến câu hỏi trước, hãy liên kết thông tin
+- Nếu câu hỏi liên quan đến câu hỏi trước, hãy liên kết thông tin từ các nguồn khác nhau
 - Nếu không tìm thấy thông tin, nói "Tôi không tìm thấy thông tin về câu hỏi này."
 - Trả lời bằng tiếng Việt
 
@@ -120,11 +129,13 @@ TRẢ LỜI:"""
 
 # ========== HỆ THỐNG QA CHÍNH ==========
 class MovieQASystem:
-    def __init__(self, vector_db, api_key, max_history=5):
+    def __init__(self, vector_db, api_key, max_history=5, max_contexts=2):
         self.db = vector_db
         self.api_key = api_key
-        self.chat_history = []  # Lưu lịch sử chat
-        self.max_history = max_history  # Giới hạn số câu hỏi lưu
+        self.chat_history = []
+        self.context_history = []
+        self.max_history = max_history
+        self.max_contexts = max_contexts
 
     def search_relevant_docs(self, question, k=3):
         """
@@ -139,35 +150,50 @@ class MovieQASystem:
 
     def answer_question(self, question):
         """
-        Trả lời câu hỏi dựa trên vector database và lịch sử chat
+        Trả lời câu hỏi dựa trên vector database, lịch sử chat và context trước đó
         """
         # Tìm kiếm documents liên quan
         docs = self.search_relevant_docs(question)
 
         if not docs:
             answer = "❌ Không tìm thấy thông tin liên quan đến câu hỏi."
+            current_context = ""
         else:
-            # Tạo context từ các documents
-            context = "\n\n".join([f"- {doc.page_content}" for doc in docs])
+            # Tạo context từ các documents hiện tại
+            current_context = "\n\n".join([f"- {doc.page_content}" for doc in docs])
 
-            # Tạo prompt với lịch sử chat
-            prompt = create_qa_prompt(context, question, self.chat_history)
+            # Tạo prompt với lịch sử chat và context trước đó
+            prompt = create_qa_prompt(
+                current_context,
+                question,
+                self.chat_history,
+                self.context_history
+            )
 
             # Gọi Gemini API
             answer = call_gemini_api(prompt, self.api_key)
 
+        # Lưu context hiện tại vào lịch sử context (chỉ lưu nếu có context)
+        if current_context:
+            self.context_history.append(current_context)
+
+            # Giới hạn số lượng context (chỉ giữ lại 2 context gần nhất)
+            if len(self.context_history) > self.max_contexts:
+                self.context_history.pop(0)  # Xóa context cũ nhất
+
         # Lưu vào lịch sử chat
         self.chat_history.append((question, answer))
 
-        # Giới hạn số lượng lịch sử
+        # Giới hạn số lượng lịch sử chat
         if len(self.chat_history) > self.max_history:
             self.chat_history.pop(0)  # Xóa câu hỏi cũ nhất
 
         return answer
 
     def clear_history(self):
-        """Xóa lịch sử chat"""
+        """Xóa lịch sử chat và context"""
         self.chat_history.clear()
+        self.context_history.clear()
         return "✅ Đã xóa lịch sử cuộc trò chuyện."
 
     def show_history(self):
@@ -180,18 +206,36 @@ class MovieQASystem:
             history_text += f"{i}. ❓ {q}\n   🤖 {a}\n" + "-" * 40 + "\n"
         return history_text
 
+    def show_context_history(self):
+        """Hiển thị lịch sử context từ vectordb"""
+        if not self.context_history:
+            return "📚 Chưa có context nào được lưu."
+
+        context_text = "📚 LỊCH SỬ CONTEXT (2 LẦN TÌM KIẾM GẦN NHẤT):\n" + "=" * 50 + "\n"
+        for i, context in enumerate(self.context_history, 1):
+            context_text += f"Context {i}:\n{context}\n" + "-" * 50 + "\n"
+        return context_text
+
+    def get_system_status(self):
+        """Hiển thị trạng thái hệ thống"""
+        return f"""📊 TRẠNG THÁI HỆ THỐNG:
+- Số câu hỏi trong lịch sử: {len(self.chat_history)}/{self.max_history}
+- Số context được lưu: {len(self.context_history)}/{self.max_contexts}
+- Giới hạn context: {self.max_contexts} context gần nhất
+- Giới hạn lịch sử chat: {self.max_history} câu hỏi gần nhất"""
+
 
 # ========== ĐỌC VECTORSTORE FAISS ==========
 def load_vector_database():
     """
     Load FAISS vector database
     """
-    if not os.path.exists(VECTOR_DIR):
-        raise FileNotFoundError(f"Thư mục vector DB không tồn tại: {VECTOR_DIR}")
+    if not os.path.exists(MOVIE_VECTOR_DB):
+        raise FileNotFoundError(f"Thư mục vector DB không tồn tại: {MOVIE_VECTOR_DB}")
 
     try:
         db = FAISS.load_local(
-            VECTOR_DIR,
+            MOVIE_VECTOR_DB,
             embedding_wrapper,
             allow_dangerous_deserialization=True
         )
@@ -218,8 +262,8 @@ def test_gemini_connection(api_key):
 
 # ========== MAIN PROGRAM ==========
 def main():
-    print("🎬 HỆ THỐNG TRẢ LỜI CÂU HỎI VỀ PHIM ẢNH")
-    print("=" * 50)
+    print("🎬 HỆ THỐNG TRẢ LỜI CÂU HỎI VỀ PHIM ẢNH (Với Context Memory)")
+    print("=" * 60)
 
     # Kiểm tra API key
     if not GEMINI_API_KEY:
