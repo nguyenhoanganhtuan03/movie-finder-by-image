@@ -72,9 +72,7 @@ def extract_hog_features(gray, img_path=None):
 def predict_film_from_image(img_path):
     img = cv2.imread(img_path)
     img = cv2.resize(img, (image_size, image_size))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img_array = image.img_to_array(img)
-    gray = color.rgb2gray(img_array)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     feature = extract_hog_features(gray, img_path)
     
     if feature is None:
@@ -171,7 +169,7 @@ def predict_film_auto(input_path):
 
 # ==== Test thử ====
 # if __name__ == "__main__":
-#     input_path = os.path.join(base_dir, "img_test/chu_tich_giao_hang.mp4")
+#     input_path = os.path.join(base_dir, "img_test/lgvm.png")
 #     predicted_film = predict_film_auto(input_path)
 #     print(f"🎬 Dự đoán: {predicted_film}")
     

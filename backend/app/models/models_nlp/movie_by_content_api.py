@@ -143,11 +143,11 @@ Trả lời chính xác theo mẫu sau (thay thế các phần trong ngoặc nh�
 "Một bộ phim thể loại {{genre}}, kéo dài {{duration}} phút, được đạo diễn bởi {{director}}, với sự tham gia của {{actor}}, ra mắt vào năm {{year}}. Nội dung phim: {{description}}"
 
 LưU Ý:
-- Nếu không tìm thấy thông tin nào, hãy bỏ qua thông tin đó trong câu mẫu.
+- Nếu không tìm thấy thông tin nào, hãy đền thông tin đó bằng chữ "x".
 - Chỉ sử dụng thông tin có trong câu hỏi người dùng.
 Ví dụ:
     - CÂU HỎI NGƯỜI DÙNG: phim kinh dị có Việt Hương đóng
-    - TRẢ LỜI: Một bộ phim thể loại kinh dị, với sự tham gia của Việt Hương.
+    - TRẢ LỜI: Một bộ phim thể loại kinh dị, kéo dài x phút, được đạo diễn bởi x, với sự tham gia của Việt Hơng, ra mắt vào năm x. Nội dung phim: x
 
 TRẢ LỜI:"""
 
