@@ -4,7 +4,6 @@ from pymongo import ReturnDocument
 
 from app.database import db
 from app.models.models_nlp.movie_by_content_api import search_movies_by_user_query
-from app.models.models_nlp.run_chatbot_api import MovieQASystem
 
 # Tìm movie bằng văn bản
 async def search_movie_by_content(content: str):

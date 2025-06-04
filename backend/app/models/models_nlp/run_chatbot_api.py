@@ -8,8 +8,8 @@ from langchain.embeddings.base import Embeddings
 
 # ==== CẤU HÌNH ====
 load_dotenv()
-VECTOR_DIR = "vector_db"
-MOVIE_VECTOR_DB = os.path.join(VECTOR_DIR, "movie_vector_db")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+MOVIE_VECTOR_DB = os.path.join(base_dir, "vector_db/movie_vector_db")
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -126,10 +126,27 @@ TRẢ LỜI:"""
 
     return prompt
 
+# ========== ĐỌC VECTORSTORE FAISS ==========
+def load_vector_database():
+    """
+    Load FAISS vector database
+    """
+    if not os.path.exists(MOVIE_VECTOR_DB):
+        raise FileNotFoundError(f"Thư mục vector DB không tồn tại: {MOVIE_VECTOR_DB}")
+
+    try:
+        db = FAISS.load_local(
+            MOVIE_VECTOR_DB,
+            embedding_wrapper,
+            allow_dangerous_deserialization=True
+        )
+        return db
+    except Exception as e:
+        raise Exception(f"Lỗi khi load vector database: {e}")
 
 # ========== HỆ THỐNG QA CHÍNH ==========
 class MovieQASystem:
-    def __init__(self, vector_db, api_key, max_history=5, max_contexts=2):
+    def __init__(self, vector_db=load_vector_database(), api_key=GEMINI_API_KEY, max_history=5, max_contexts=2):
         self.db = vector_db
         self.api_key = api_key
         self.chat_history = []
@@ -224,26 +241,6 @@ class MovieQASystem:
 - Giới hạn context: {self.max_contexts} context gần nhất
 - Giới hạn lịch sử chat: {self.max_history} câu hỏi gần nhất"""
 
-
-# ========== ĐỌC VECTORSTORE FAISS ==========
-def load_vector_database():
-    """
-    Load FAISS vector database
-    """
-    if not os.path.exists(MOVIE_VECTOR_DB):
-        raise FileNotFoundError(f"Thư mục vector DB không tồn tại: {MOVIE_VECTOR_DB}")
-
-    try:
-        db = FAISS.load_local(
-            MOVIE_VECTOR_DB,
-            embedding_wrapper,
-            allow_dangerous_deserialization=True
-        )
-        return db
-    except Exception as e:
-        raise Exception(f"Lỗi khi load vector database: {e}")
-
-
 # ========== TEST API CONNECTION ==========
 def test_gemini_connection(api_key):
     """
@@ -334,5 +331,5 @@ def main():
             continue
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
