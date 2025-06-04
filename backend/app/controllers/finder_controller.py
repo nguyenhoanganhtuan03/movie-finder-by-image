@@ -1,31 +1,24 @@
-from fastapi import UploadFile
-import shutil
-import os
-# from app.models.run_model_cnn_faiss import predict_film_auto
-# from app.models.run_model_sift_faiss import predict_film_auto
-from app.models.run_model_hog_faiss import predict_film_auto
+from fastapi import HTTPException
+from typing import Optional, List
+from pymongo import ReturnDocument
 
-# Đường dẫn thư mục tạm để lưu file ảnh hoặc video
-TEMP_UPLOAD_DIR = "backend/app/uploads/upload_temps"
-os.makedirs(TEMP_UPLOAD_DIR, exist_ok=True)
+from app.database import db
+from app.models.models_nlp.movie_by_content_api import search_movies_by_user_query
+from app.models.models_nlp.run_chatbot_api import MovieQASystem
 
-# Hàm để dự đoán phim từ file ảnh hoặc video
-async def predict_film(file: UploadFile):
+# Tìm movie bằng văn bản
+async def search_movie_by_content(content: str):
+    if not content:
+        raise HTTPException(status_code=400, detail="Nội dung tìm kiếm không được để trống.")
+
     try:
-        # Tạo đường dẫn lưu file tạm
-        file_path = os.path.join(TEMP_UPLOAD_DIR, file.filename)
+        # Gọi hàm tìm kiếm
+        _, results = search_movies_by_user_query(content)
 
-        # Ghi nội dung file ra đĩa
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Chỉ lấy danh sách tên phim
+        movie_names = [name for name, _ in results]
 
-        # Gọi hàm dự đoán từ run_model
-        prediction = predict_film_auto(file_path)
-
-        # Xóa file sau khi xử lý (tuỳ bạn nếu muốn giữ lại để debug)
-        os.remove(file_path)
-
-        return {"filename": file.filename, "predicted_film": prediction}
+        return movie_names
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Lỗi trong quá trình tìm kiếm: {str(e)}")

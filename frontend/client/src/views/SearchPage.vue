@@ -7,14 +7,15 @@
   
         <!-- Ô tìm kiếm -->
         <div class="input-group mb-3">
-          <input
-            v-model="searchText"
-            type="text"
-            class="form-control"
-            placeholder="Nhập từ khoá tìm kiếm..."
-            @input="performSearch"
-          />
-        </div>
+        <input
+          v-model="searchText"
+          type="text"
+          class="form-control"
+          placeholder="Nhập từ khoá tìm kiếm..."
+          @keyup.enter="searchByContent"
+        />
+        <button class="btn btn-primary" @click="searchByContent">Tìm</button>
+      </div>
   
         <!-- Upload ảnh -->
         <div class="mb-3">
@@ -89,6 +90,7 @@
   import AppFooter from "@/components/common/AppFooter.vue";
   import MovieCard from "@/components/movies/movieCard.vue";
   import MovieService from "@/services/movie.service";
+  import FinderService from "@/services/finder.service";
   
   export default {
     components: {
@@ -107,17 +109,27 @@
       };
     },
     methods: {
-      async performSearch() {
+      async searchByContent() {
         const text = this.searchText.trim();
         if (!text) {
           this.searchResults = [];
+          this.predictedName = "";
           return;
         }
+  
         try {
-          this.searchResults = await MovieService.searchByName(text);
+          const result = await FinderService.searchByContent(text); 
+  
+          this.searchResults = result.results || [];
+          this.predictedName = result.predicted_name || "";
+
+          if (this.searchResults.length === 0) {
+            alert("Không tìm kiếm được phim từ mô tả này!");
+          }
         } catch (error) {
-          console.error("Lỗi tìm kiếm:", error);
+          console.error("Lỗi khi tìm kiếm theo nội dung:", error);
           this.searchResults = [];
+          this.predictedName = "";
         }
       },
   
@@ -147,6 +159,7 @@
           const result = await MovieService.searchByFile(file);
           this.searchResults = result.results || [];
           this.predictedName = result.predicted_name || "";
+          console.log(result.results)
   
           if (this.searchResults.length === 0) {
             alert("Không nhận diện được phim từ ảnh này!");

@@ -1,12 +1,32 @@
-from fastapi import APIRouter, UploadFile, File, FastAPI
-from app.controllers.finder_controller import predict_film
+from fastapi import APIRouter, FastAPI, Body
+from pydantic import BaseModel
+from typing import List
+
+from app.controllers.finder_controller import search_movie_by_content
+from app.controllers.movie_controller import search_movies_by_name
 
 app = FastAPI()
-router = APIRouter(prefix="/finder", tags=["Film Finder"])
+router = APIRouter()
 
-@router.post("/predict")
-async def find_film(file: UploadFile = File(...)):
-    return await predict_film(file)
+@router.post("/search_by_content")
+async def finder_movie_by_content(content: str = Body(..., embed=True)):
+    predicted_names = await search_movie_by_content(content)
 
-# Thêm route vào FastAPI app
+    results = []
+    for name in predicted_names:
+        matched = await search_movies_by_name(name)
+        results.extend(matched)
+
+    if not results:
+        return {
+            "predicted_names": predicted_names,
+            "results": []
+        }
+
+    return {
+        "predicted_names": predicted_names,
+        "results": list(results)
+    }
+
+# Thêm route vào app
 app.include_router(router)

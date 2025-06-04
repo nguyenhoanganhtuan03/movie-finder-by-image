@@ -8,12 +8,12 @@ import faiss
 
 # ==== CẤU HÌNH ====
 load_dotenv()
-VECTOR_DIR = "vector_db"
-INDEX_PATH = os.path.join(VECTOR_DIR, "index_movie.faiss")
-PROMPT_MAPPING_PATH = os.path.join(VECTOR_DIR, "prompt_mapping.csv")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+INDEX_PATH = os.path.join(base_dir, "vector_db/index_movie.faiss")
+PROMPT_MAPPING_PATH = os.path.join(base_dir, "vector_db/prompt_mapping.csv")
 SIMILARITY_THRESHOLD = 0.3
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
-METADATA_PATH = os.path.join(VECTOR_DIR, "metadata.csv")
+METADATA_PATH = os.path.join(base_dir, "vector_db/metadata.csv")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_2")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
@@ -172,20 +172,20 @@ def search_movies_by_user_query(user_query, top_k=5):
     return search_prompt, results
 
 # ========== MAIN ==========
-while True:
-    user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
-    if user_input.lower() == "quit":
-        print("👋 Thoát chương trình.")
-        break
+# while True:
+#     user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
+#     if user_input.lower() == "quit":
+#         print("👋 Thoát chương trình.")
+#         break
 
-    prompt, movies = search_movies_by_user_query(user_input)
-    # name_movies = [name for name, _ in movies]
-    # print(name_movies)
+#     prompt, movies = search_movies_by_user_query(user_input)
+#     # name_movies = [name for name, _ in movies]
+#     # print(name_movies)
 
-    print("\n🧠 Prompt dùng để truy vấn:", prompt)
-    if movies:
-        print("🎬 Kết quả tìm được:")
-        for name, score in movies:
-            print(f"- {name} (độ tương đồng: {score:.2f})")
-    else:
-        print("❌ Không tìm thấy phim phù hợp.\n")
+#     print("\n🧠 Prompt dùng để truy vấn:", prompt)
+#     if movies:
+#         print("🎬 Kết quả tìm được:")
+#         for name, score in movies:
+#             print(f"- {name} (độ tương đồng: {score:.2f})")
+#     else:
+#         print("❌ Không tìm thấy phim phù hợp.\n")
