@@ -22,7 +22,7 @@ async def get_hischat_by_userid(user_id: str = Query(...)):
 
 
 # Route cập nhật hischat
-@router.put("/update_hischat")
+@router.put("/")
 async def update_hischat(request: UpdateChatRequest):
     # Cập nhật lịch sử chat
     updated_doc = await update_his_chat(request.hischat_id, request.user_message)
