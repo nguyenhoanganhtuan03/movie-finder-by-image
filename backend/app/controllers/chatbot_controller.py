@@ -56,7 +56,17 @@ async def chatbot(user_id: str, content: str):
 
 # Lấy tất cả lịch sử chat theo user_id
 async def get_his_chat_by_user(user_id: str) -> List[HistoryChatbotModel]:
-    cursor = db["history_chat"].find({"user_id": user_id}).sort("date_chat", -1) 
+    cursor = db["history_chatbot"].find({"user_id": user_id}).sort("date_chat", -1) 
+    results = []
+    async for document in cursor:
+        document["_id"] = str(document["_id"])
+        results.append(document)
+    return results
+
+
+# Lấy thông tin lịch sử chat theo hischat_id
+async def get_his_chat_by_id(hischat_id: str):
+    cursor = db["history_chatbot"].find({"_id": hischat_id})
     results = []
     async for document in cursor:
         results.append(HistoryChatbotModel(**document))

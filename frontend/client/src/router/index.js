@@ -8,6 +8,7 @@ import FavoritePage from "@/views/FavoritePage.vue";
 import MoviePage from "@/views/MoviePage.vue";
 import StaffLogin from "@/views/StaffLogin.vue";
 import SearchPage from "@/views/SearchPage.vue";
+import ChatbotPage from "@/views/ChatbotPage.vue";
 
 
 const routes = [
@@ -67,6 +68,12 @@ const routes = [
         path: "/search",
         name: "searchPage",
         component: SearchPage,
+    },
+
+    {
+        path: "/chatbot",
+        name: "chatbotpage",
+        component: ChatbotPage,
     }
 
 ]

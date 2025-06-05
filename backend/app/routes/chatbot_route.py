@@ -2,7 +2,7 @@ from fastapi import APIRouter, FastAPI, Body, Query, Path
 
 from app.controllers.chatbot_controller import (chatbot, get_his_chat_by_user, 
                                                 delete_all_his_chat_by_user, delete_his_chat,
-                                                update_his_chat)
+                                                update_his_chat, get_his_chat_by_id)
 from app.entities.chatbot_model import ChatRequest, UpdateChatRequest
 
 app = FastAPI()
@@ -16,10 +16,15 @@ async def chatbot_answer(request: ChatRequest):
 
 
 # Route lấy các hischat theo user_id
-@router.get("/")
-async def get_hischat_by_userid(user_id: str = Query(...)):
+@router.get("/user/{user_id}")
+async def get_hischat_by_userid(user_id: str = Path(...)):
     return await get_his_chat_by_user(user_id)
 
+
+# Route lấy lịch sử chat theo _id
+@router.get("/{hischat_id}")
+async def get_hischat_by_id(hischat_id: str = Path(...)):
+    return await get_his_chat_by_id(hischat_id)
 
 # Route cập nhật hischat
 @router.put("/")
