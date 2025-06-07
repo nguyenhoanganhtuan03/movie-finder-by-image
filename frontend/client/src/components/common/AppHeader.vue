@@ -21,9 +21,6 @@
         <li class="nav-item">
           <router-link to="/search" class="nav-link" active-class="active">Tìm kiếm nâng cao</router-link>
         </li>
-        <li class="nav-item">
-          <router-link to="/chatbot" class="nav-link" active-class="active">Chatbot</router-link>
-        </li>
       </ul>
 
       <!-- Kiểm tra trạng thái đăng nhập -->

@@ -16,6 +16,28 @@
       </div>
     </div>
 
+    <!-- Nút bật chatbot -->
+    <button
+      v-if="!isChatOpen"
+      class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+      style="width: 60px; height: 60px; z-index: 10000;"
+      @click="isChatOpen = true"
+    >
+      <i class="bi bi-chat-dots-fill fs-4"></i>
+    </button>
+
+    <button
+      v-if="!isChatOpen"
+      @click="isChatOpen = true"
+      class="btn btn-primary rounded-circle shadow-lg"
+      style="position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; z-index: 9999;"
+    >
+      <i class="bi bi-robot fs-4"></i>
+    </button>
+
+    <!-- Chatbot widget -->
+    <MiniChatWidget v-if="isChatOpen" @close="isChatOpen = false" />
+
     <AppFooter />
   </div>
 </template>
@@ -26,8 +48,9 @@ import { useRoute } from "vue-router";
 import MovieDetail from "@/components/movies/movieDetail.vue";
 import AppHeader from "@/components/common/AppHeader.vue";
 import AppFooter from "@/components/common/AppFooter.vue";
-import commentCard from "@/components/comments/commentCard.vue"; // THÊM component comment
+import commentCard from "@/components/comments/commentCard.vue";
 import MovieService from "@/services/movie.service.js";
+import MiniChatWidget from "@/components/chatbot/ChatbotWidget.vue";
 
 export default {
   name: "MoviePage",
@@ -35,7 +58,8 @@ export default {
     MovieDetail,
     AppHeader,
     AppFooter,
-    commentCard, // đăng ký component
+    commentCard,
+    MiniChatWidget,
   },
   setup() {
     const route = useRoute();
@@ -43,6 +67,7 @@ export default {
     const movie = ref(null);
     const loading = ref(false);
     const error = ref(null);
+    const isChatOpen = ref(false);
 
     onMounted(async () => {
       loading.value = true;
@@ -60,6 +85,7 @@ export default {
       movie,
       loading,
       error,
+      isChatOpen,
     };
   },
 };

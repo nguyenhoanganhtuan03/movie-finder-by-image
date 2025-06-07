@@ -5,19 +5,18 @@ class ChatbotService {
     this.api = createApiClient(baseUrl);
   }
 
-  async sendMessage(userId, content, chatId = null) {
+  async sendMessage(userId, content) {
     const payload = { 
       user_id: userId, 
       content 
     };
-    
-    // Thêm chat_id nếu có (để tiếp tục cuộc trò chuyện hiện tại)
-    if (chatId) {
-      payload.hischat_id = chatId;
-    }
-    
+  
     const { data } = await this.api.post("/", payload);
-    return data;
+    console.log(data)
+    return {
+      answer: data.answer,
+      hischat_id: data.hischat_id
+    };
   }
 
   async getHistory(userId) {

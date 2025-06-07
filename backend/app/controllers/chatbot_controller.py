@@ -50,8 +50,11 @@ async def chatbot(user_id: str, content: str):
         ]
     )
 
-    await create_his_chat(history_data)
-    return answer
+    saved_record = await create_his_chat(history_data)
+    return {
+        "answer": answer,
+        "hischat_id": str(saved_record) 
+    }
 
 
 # Lấy tất cả lịch sử chat theo user_id

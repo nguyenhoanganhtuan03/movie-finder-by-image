@@ -28,6 +28,28 @@
       </div>
     </div>
 
+    <!-- Nút bật chatbot -->
+    <button
+      v-if="!isChatOpen"
+      class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+      style="width: 60px; height: 60px; z-index: 10000;"
+      @click="isChatOpen = true"
+    >
+      <i class="bi bi-chat-dots-fill fs-4"></i>
+    </button>
+
+    <button
+      v-if="!isChatOpen"
+      @click="isChatOpen = true"
+      class="btn btn-primary rounded-circle shadow-lg"
+      style="position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; z-index: 9999;"
+    >
+      <i class="bi bi-robot fs-4"></i>
+    </button>
+
+    <!-- Chatbot widget -->
+    <MiniChatWidget v-if="isChatOpen" @close="isChatOpen = false" />
+
     <AppFooter />
   </div>
 </template>
@@ -39,6 +61,7 @@ import MovieService from "@/services/movie.service.js";
 import AppHeader from "@/components/common/AppHeader.vue";
 import AppFooter from "@/components/common/AppFooter.vue";
 import FavoriteCard from "@/components/favorites/favoriteCard.vue";
+import MiniChatWidget from "@/components/chatbot/ChatbotWidget.vue"; // import chatbot
 import { useAuthStore } from "@/store/auth";
 
 export default {
@@ -47,6 +70,7 @@ export default {
     AppHeader,
     AppFooter,
     FavoriteCard,
+    MiniChatWidget,  // đăng ký chatbot
   },
   setup() {
     const authStore = useAuthStore();
@@ -57,13 +81,14 @@ export default {
     const error = ref(null);
     const showMore = ref(false);
 
-    // Tạo mảng chứa object { _id: favoriteId, movie: fullMovieData }
     const favoriteWithMovies = ref([]);
 
     const displayedFavorites = computed(() => {
       const reversed = [...favoriteWithMovies.value].reverse();
       return showMore.value ? reversed : reversed.slice(0, 4);
     });
+
+    const isChatOpen = ref(false); // trạng thái mở chatbot
 
     onMounted(async () => {
       if (!userId) {
@@ -74,7 +99,7 @@ export default {
       loading.value = true;
       try {
         const result = await FavoriteService.getFavoritesByUserId(userId);
-        console.log("🔥 Favorite raw result:", result);  // Thêm dòng này
+        console.log("🔥 Favorite raw result:", result);
 
         favorites.value = result;
 
@@ -85,14 +110,14 @@ export default {
         const movies = await Promise.all(moviePromises);
 
         favoriteWithMovies.value = result.map((fav, index) => {
-          console.log("Mapping favorite:", fav);  // Thêm dòng này
+          console.log("Mapping favorite:", fav);
           return {
-            _id: fav._id,  // <-- kiểm tra có _id hay không
+            _id: fav._id,
             movie: movies[index],
           };
         });
 
-        console.log("Mapped favoriteWithMovies:", favoriteWithMovies.value); // Thêm dòng này
+        console.log("Mapped favoriteWithMovies:", favoriteWithMovies.value);
 
       } catch (err) {
         error.value = err.message || "Lỗi không xác định";
@@ -116,6 +141,7 @@ export default {
       error,
       showMore,
       removeFavorite,
+      isChatOpen,  // expose biến chatbot
     };
   },
 };

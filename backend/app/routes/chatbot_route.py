@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post("/")
 async def chatbot_answer(request: ChatRequest):
     response = await chatbot(request.user_id, request.content)
-    return {"answer": response}
+    return response
 
 
 # Route lấy các hischat theo user_id

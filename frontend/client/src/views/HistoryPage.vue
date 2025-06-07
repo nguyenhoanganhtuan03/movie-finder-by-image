@@ -60,6 +60,28 @@
       </div>
     </div>
 
+    <!-- Nút bật chatbot -->
+    <button
+      v-if="!isChatOpen"
+      class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
+      style="width: 60px; height: 60px; z-index: 10000;"
+      @click="isChatOpen = true"
+    >
+      <i class="bi bi-chat-dots-fill fs-4"></i>
+    </button>
+
+    <button
+      v-if="!isChatOpen"
+      @click="isChatOpen = true"
+      class="btn btn-primary rounded-circle shadow-lg"
+      style="position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; z-index: 9999;"
+    >
+      <i class="bi bi-robot fs-4"></i>
+    </button>
+
+    <!-- Chatbot widget -->
+    <MiniChatWidget v-if="isChatOpen" @close="isChatOpen = false" />
+
     <!-- Footer -->
     <AppFooter />
   </div>
@@ -71,6 +93,7 @@ import AppHeader from "@/components/common/AppHeader.vue";
 import AppFooter from "@/components/common/AppFooter.vue";
 import HistoryCard from "@/components/histories/historyCard.vue";
 import HistoryService from "@/services/history.service.js";
+import MiniChatWidget from "@/components/chatbot/ChatbotWidget.vue";
 
 export default {
   name: "HistoryPage",
@@ -78,6 +101,7 @@ export default {
     AppHeader,
     AppFooter,
     HistoryCard,
+    MiniChatWidget,
   },
   data() {
     return {
@@ -87,6 +111,7 @@ export default {
       userId: null,
       showMore: false,
       deletingAll: false,
+      isChatOpen: false,  // trạng thái mở chatbot
     };
   },
   computed: {
