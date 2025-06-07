@@ -45,6 +45,7 @@ class ChatbotService {
   // Thêm method để lấy chi tiết một cuộc trò chuyện
   async getChatById(chatId) {
     const { data } = await this.api.get(`/${chatId}`);
+    console.log(data)
     return data;
   }
 }

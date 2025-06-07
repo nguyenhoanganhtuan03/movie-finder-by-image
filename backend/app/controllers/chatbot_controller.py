@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from pymongo import ReturnDocument
 from typing import List
 from datetime import datetime
@@ -69,11 +70,10 @@ async def get_his_chat_by_user(user_id: str) -> List[HistoryChatbotModel]:
 
 # Lấy thông tin lịch sử chat theo hischat_id
 async def get_his_chat_by_id(hischat_id: str):
-    cursor = db["history_chatbot"].find({"_id": hischat_id})
-    results = []
-    async for document in cursor:
-        results.append(HistoryChatbotModel(**document))
-    return results
+    result = await db["history_chatbot"].find_one({"_id": hischat_id})
+    if result is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy")
+    return jsonable_encoder(result)
 
 
 # Hàm cập nhật hischat

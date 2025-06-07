@@ -1,5 +1,6 @@
 
 import { defineStore } from "pinia";
+import { useChatbotStore } from '@/store/chatbot';
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -19,6 +20,8 @@ export const useAuthStore = defineStore("auth", {
     logout() {
       this.user = null;
       this.isAuthenticated = false;
+      const chatbotStore = useChatbotStore();
+      chatbotStore.clearChatId();
       console.log("🔹 User logged out");
     },
   },

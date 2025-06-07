@@ -85,7 +85,9 @@ export default {
     const isTyping = ref(false);
     const chatContainer = ref(null);
     const messageInput = ref(null);
-    const chatStarted = ref(false); 
+    const chatStarted = ref(false);
+
+    const chatId = ref(chatbotStore.currentChatId);
 
     const formatTime = (timestamp) => {
       if (!timestamp) return '';
@@ -102,6 +104,36 @@ export default {
           chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
         }
       });
+    };
+
+    const loadChatHistory = async (id) => {
+      try {
+        const res = await chatbotService.getChatById(id);
+        console.log(res)
+        const contentArr = res.content || [];
+
+        const formattedMessages = contentArr.flatMap(item => {
+          const messages = [];
+          if (item.user) {
+            messages.push({ sender: 'user', text: item.user, timestamp: new Date() });
+          }
+          if (item.bot) {
+            messages.push({ sender: 'bot', text: item.bot, timestamp: new Date() });
+          }
+          return messages;
+        });
+
+        messages.value = formattedMessages;
+        chatStarted.value = true;
+        scrollToBottom();
+      } catch (err) {
+        console.error("❌ Không thể tải lịch sử chat:", err);
+        messages.value.push({
+          sender: 'bot',
+          text: 'Không thể tải lịch sử chat.',
+          timestamp: new Date()
+        });
+      }
     };
 
     const sendMessage = async () => {
@@ -125,20 +157,22 @@ export default {
 
       try {
         let res;
-        let chatId = chatbotStore.currentChatId;
 
-        if (!chatStarted.value) {
+        if (!chatId.value) {
+          // ✅ Chưa có cuộc trò chuyện nào, tạo mới
           res = await chatbotService.sendMessage(userId, text);
           if (res.hischat_id) {
             chatbotStore.setChatId(res.hischat_id);
+            chatId.value = res.hischat_id; // ✅ cập nhật reactive chatId
           }
           chatStarted.value = true;
-          chatId = res.hischat_id;
         } else {
-          res = await chatbotService.updateHistory(chatId, text);
+          // ✅ Đã có session, tiếp tục gửi tin nhắn
+          res = await chatbotService.updateHistory(chatId.value, text);
+          chatStarted.value = true;
         }
 
-        // Lấy câu trả lời bot mới nhất từ updated_history.content nếu có
+        // ✅ Lấy câu trả lời bot mới nhất từ updated_history.content
         let botAnswer = res.answer || 'Xin lỗi, tôi chưa thể trả lời.';
         if (res.updated_history && Array.isArray(res.updated_history.content)) {
           const contentArr = res.updated_history.content;
@@ -172,17 +206,19 @@ export default {
       messages.value = [];
       userInput.value = '';
       chatbotStore.clearChatId();
+      chatId.value = null;
       chatStarted.value = false;
       nextTick(() => messageInput.value?.focus());
     };
 
     const handleClose = () => {
-      resetChat();         // Xoá session chat hiện tại
-      emit('close');       // Báo về cha (HomePage.vue) để ẩn widget
+      emit('close');
     };
 
-    onMounted(() => {
-      resetChat();
+    onMounted(async () => {
+      if (chatId.value) {
+        await loadChatHistory(chatId.value);
+      }
     });
 
     return {
@@ -193,11 +229,13 @@ export default {
       messageInput,
       sendMessage,
       formatTime,
-      handleClose
+      handleClose,
+      loadChatHistory
     };
   }
 };
 </script>
+
 
 <style scoped>
 .chat-widget {
