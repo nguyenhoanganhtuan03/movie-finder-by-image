@@ -10,6 +10,22 @@
       <div class="card-body d-flex flex-column">
         <h5 class="card-title">{{ movie.name }}</h5>
 
+        <!-- Hiển thị rating -->
+        <div class="mb-2">
+          <span v-if="rating !== null">
+            <span class="text-warning">
+              <i
+                v-for="n in 5"
+                :key="n"
+                class="bi"
+                :class="n <= Math.round(rating) ? 'bi-star-fill' : 'bi-star'"
+              ></i>
+            </span>
+            <small class="text-muted">({{ rating.toFixed(1) }} / 5)</small>
+          </span>
+          <span v-else class="text-muted">Chưa có đánh giá</span>
+        </div>
+
         <p class="card-text">⏱ Thời lượng: {{ movie.duration }} phút</p>
 
         <p class="card-text">
@@ -31,6 +47,7 @@
 <script>
 import { useAuthStore } from "@/store/auth";
 import HistoryService from "@/services/history.service";
+import ratingService from "@/services/rating.service";
 
 export default {
   name: "MovieCard",
@@ -39,6 +56,11 @@ export default {
       type: Object,
       required: true,
     },
+  },
+  data() {
+    return {
+      rating: null,
+    };
   },
   computed: {
     defaultPoster() {
@@ -49,7 +71,6 @@ export default {
     async handleWatchMovie() {
       const authStore = useAuthStore();
 
-      // Nếu chưa đăng nhập thì không ghi lịch sử
       if (authStore.isLoggedIn) {
         try {
           await HistoryService.addHistory({
@@ -62,9 +83,19 @@ export default {
         }
       }
 
-      // Điều hướng tới trang chi tiết phim
       this.$router.push(`/movie/${this.movie._id}`);
     },
+    async fetchRating() {
+      try {
+        const res = await ratingService.getRatingByMovieId(this.movie._id);
+        this.rating = res.average_rating;
+      } catch (error) {
+        this.rating = null; // Không có rating
+      }
+    },
+  },
+  mounted() {
+    this.fetchRating();
   },
 };
 </script>
@@ -77,5 +108,9 @@ export default {
 .card-text {
   font-size: 0.95rem;
   color: #555;
+}
+.bi-star,
+.bi-star-fill {
+  font-size: 1.1rem;
 }
 </style>
