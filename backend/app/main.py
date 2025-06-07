@@ -13,6 +13,7 @@ from app.routes.comment_route import router as comment_route
 from app.routes.finder_route import router as finder_route
 from app.routes.staff_route import router as staff_route
 from app.routes.chatbot_route import router as chatbot_route
+from app.routes.rating_route import router as rating_route
 
 app = FastAPI()
 
@@ -48,3 +49,4 @@ app.include_router(comment_route, prefix="/api/comment")
 app.include_router(finder_route, prefix="/api/finder")
 app.include_router(staff_route, prefix="/api/staff")
 app.include_router(chatbot_route, prefix="/api/chatbot")
+app.include_router(rating_route, prefix="/api/rating")
