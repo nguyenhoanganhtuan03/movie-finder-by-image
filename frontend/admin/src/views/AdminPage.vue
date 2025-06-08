@@ -5,7 +5,34 @@
       <div class="admin-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h2>Quản lý phim</h2>
-          <button class="btn btn-primary" @click="showAddForm = true">+ Thêm phim</button>
+          <div class="d-flex align-items-center mb-3">
+            <button class="btn btn-primary" @click="showAddForm = true">+ Thêm phim</button>
+            <button class="btn btn-outline-primary ms-2" @click="showBulkForm = true">📂 Thêm hàng loạt</button>
+          </div>
+
+          <!-- Modal thêm hàng loạt -->
+          <div v-if="showBulkForm" class="modal-backdrop">
+            <div class="modal-content-custom">
+              <h4 class="mb-3">📋 Thêm phim hàng loạt từ Excel</h4>
+              
+              <div class="alert alert-warning mb-3" role="alert" style="font-size: 0.9rem;">
+                ⚠️ Lưu ý: Chưa thể thêm video và poster trong upload hàng loạt, vui lòng thêm sau.
+              </div>
+
+              <div class="mb-3">
+                <a :href="excelTemplateUrl" download class="btn btn-link">📥 Tải file mẫu Excel</a>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Chọn file Excel (.xlsx)</label>
+                <input type="file" @change="handleExcelUpload" accept=".xlsx" class="form-control" />
+              </div>
+
+              <div class="d-flex justify-content-end mt-3">
+                <button class="btn btn-secondary me-2" @click="showBulkForm = false">Hủy</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Thanh tìm kiếm -->
@@ -126,6 +153,8 @@
   import AppFooter from "@/components/common/AppFooter.vue";
   import MovieCardAdmin from "@/components/movies/movieCardAdmin.vue";
   import MovieService from "@/services/movie.service.js";
+  import RatingService from "@/services/rating.service.js";
+  import * as XLSX from "xlsx";
   
   export default {
     components: {
@@ -137,6 +166,7 @@
       return {
         movies: [],
         showAddForm: false,
+        showBulkForm: false,
         form: {
           name: "",
           duration: null,
@@ -153,31 +183,33 @@
         genreInput: "",
         actorInput: "",
         searchQuery: "",
+        excelTemplateUrl: "/movies_data.xlsx",
       };
     },
-
+  
     computed: {
       filteredMovies() {
         const removeVietnameseTones = (str) => {
           return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
         };
-
         const q = removeVietnameseTones(this.searchQuery.trim().toLowerCase());
-
+  
         return this.movies.filter((movie) => {
           const movieName = removeVietnameseTones(movie.name.toLowerCase());
           return movieName.includes(q);
         }).reverse();
       },
     },
-    
+  
     methods: {
       async fetchMovies() {
         this.movies = await MovieService.getAll();
       },
+  
       handleEditMovie(movie) {
         alert(`🛠 Chỉnh sửa phim: ${movie.name}`);
       },
+  
       async handleDeleteMovie(id) {
         if (confirm("Bạn có chắc chắn muốn xoá phim này không?")) {
           const result = await MovieService.deleteMovie(id);
@@ -198,27 +230,26 @@
         }
         const reader = new FileReader();
         reader.onload = (e) => {
-          this.form.poster = e.target.result; // base64 string
+          this.form.poster = e.target.result;
         };
         reader.readAsDataURL(file);
         this.form.posterFile = file;
       },
-
+  
       async uploadVideoFile(file) {
         const formData = new FormData();
         formData.append("file", file);
-
-        // Giả sử backend có API upload riêng cho video
+  
         const response = await fetch("http://127.0.0.1:8000/api/movie/uploadFiles", {
           method: "POST",
           body: formData,
         });
-
+  
         if (!response.ok) throw new Error("Upload video thất bại");
-
+  
         const data = await response.json();
         return data.file_url;
-      }, 
+      },
   
       async handleVideoChange(event) {
         const file = event.target.files[0];
@@ -228,10 +259,10 @@
           return;
         }
         this.form.movieFile = file;
-
+  
         try {
           const url = await this.uploadVideoFile(file);
-          this.form.movie_url = url; // Đường dẫn backend
+          this.form.movie_url = url;
         } catch (error) {
           alert("Lỗi upload video: " + error.message);
           this.form.movie_url = "";
@@ -239,16 +270,11 @@
       },
   
       updateGenre() {
-        this.form.genre = this.genreInput
-          .split(",")
-          .map((g) => g.trim())
-          .filter((g) => g);
+        this.form.genre = this.genreInput.split(",").map((g) => g.trim()).filter((g) => g);
       },
+  
       updateActor() {
-        this.form.actor = this.actorInput
-          .split(",")
-          .map((a) => a.trim())
-          .filter((a) => a);
+        this.form.actor = this.actorInput.split(",").map((a) => a.trim()).filter((a) => a);
       },
   
       cancelAdd() {
@@ -273,31 +299,90 @@
         this.genreInput = "";
         this.actorInput = "";
   
-        // Reset input file cho poster
         if (this.$refs.posterInput) {
           this.$refs.posterInput.value = "";
         }
       },
   
       async handleSubmit() {
-        // Cập nhật lại genre và actor trước khi gửi
         this.updateGenre();
         this.updateActor();
   
-        try {
-          const result = await MovieService.addMovie(this.form);
-          if (result.status === "success") {
-            alert(result.message);
-            this.fetchMovies();
-            this.cancelAdd();
-          } else {
-            alert("Thêm phim thất bại: " + result.message);
+        const result = await MovieService.addMovie(this.form);
+        if (result.status === "success") {
+          alert(result.message);
+          try {
+            const movieId = result.data?._id;
+            if (movieId) {
+              await RatingService.createRating(movieId, 5);
+            }
+          } catch (err) {
+            console.warn("⚠️ Không thể tạo rating:", err.message);
           }
+
+          this.fetchMovies();
+          this.cancelAdd();
+        } else {
+          alert("Thêm phim thất bại: " + result.message);
+        }
+      },
+  
+      // ✅ Xử lý upload file Excel
+      async handleExcelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+  
+        try {
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data);
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet);
+          console.log("📄 Dữ liệu đọc từ Excel:", rows);
+  
+          for (const row of rows) {
+            const movie = {
+              name: row["Tên phim"] || "",
+              duration: Number(row["Thời lượng"]) || null,
+              genre: (row["Thể loại"] || "").split(/\s*,\s*/).map(g => g.trim()).filter(g => g),
+              director: row["Đạo diễn"] || "",
+              actor: (row["Diễn viên"] || "").split(/\s*,\s*/).map(a => a.trim()).filter(a => a),
+              year_of_release: Number(row["Năm phát hành"]) || null,
+              describe: row["Mô tả"] || "",
+              movieFile: null,
+              posterFile: null,
+              movie_url: "",
+              poster: "",
+            };
+  
+            if (!movie.name || !movie.duration) continue;
+  
+            try {
+              const result = await MovieService.addMovie(movie);
+              if (result.status === "success") {
+                const movieId = result.data?._id;
+                if (movieId) {
+                  try {
+                    await RatingService.createRating(movieId, 5);
+                  } catch (ratingErr) {
+                    console.warn(`⚠️ Không thể tạo rating cho "${movie.name}":`, ratingErr.message);
+                  }
+                }
+              } else {
+                console.warn("Thêm thất bại:", result.message);
+              }
+            } catch (err) {
+              console.error("❌ Lỗi thêm phim từ Excel:", err.message);
+            }
+          }
+
+          alert("✅ Đã xử lý xong file Excel.");
+          this.fetchMovies();
         } catch (error) {
-          alert("Lỗi khi thêm phim: " + error.message);
+          alert("Lỗi đọc file Excel: " + error.message);
         }
       },
     },
+  
     mounted() {
       this.fetchMovies();
     },
@@ -311,5 +396,28 @@
     margin: auto;
     background-color: #ffffff;
   }
+
+  .modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* nền mờ */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content-custom {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
   </style>
   

@@ -21,6 +21,20 @@
             </span>
             <span v-else>Không rõ</span>
           </p>
+          <p class="card-text mb-3 d-flex align-items-center gap-1">
+            ⭐ Đánh giá:
+            <span v-if="rating !== null">
+            <span class="text-warning">
+              <i
+                v-for="n in 5"
+                :key="n"
+                class="bi"
+                :class="n <= Math.round(rating) ? 'bi-star-fill' : 'bi-star'"
+              ></i>
+            </span>
+            <small class="text-muted">({{ rating.toFixed(1) }} / 5)</small>
+          </span>
+          </p>
         </div>
 
         <!-- FORM chỉnh sửa -->
@@ -95,6 +109,8 @@
 
 <script>
 import movieService from '@/services/movie.service';
+import RatingService from "@/services/rating.service.js";
+
 
 export default {
   name: "MovieCardAdmin",
@@ -107,6 +123,7 @@ export default {
   data() {
     return {
       isEditing: false,
+      rating: 0,
       formData: {
         name: "",
         duration: 0,
@@ -131,6 +148,15 @@ export default {
   methods: {
     handleWatchMovie() {
       this.$router.push(`/movie/${this.movie._id}`);
+    },
+    async fetchRating() {
+      try {
+        const res = await RatingService.getRatingByMovieId(this.movie._id);
+        this.rating = res.average_rating;
+      } catch (error) {
+        this.rating = "Lỗi";
+        console.warn("Không lấy được rating:", error.message);
+      }
     },
     startEditing() {
       this.isEditing = true;
@@ -219,6 +245,9 @@ export default {
         alert("Cập nhật thất bại!");
       }
     },
+  },
+  mounted() {
+    this.fetchRating();
   },
 };
 </script>
