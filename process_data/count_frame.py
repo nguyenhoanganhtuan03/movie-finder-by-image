@@ -15,15 +15,15 @@ def count_images_per_folder(root_dir, image_extensions=None):
     print(f"\nTổng số ảnh: {total}")
 
 print("====Thư mục Train====")
-folder_train_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_2\\Train'
+folder_train_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_1\\Train'
 count_images_per_folder(folder_train_path)
 
 print("====Thư mục Test====")
-folder_test_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_2\\Test'
+folder_test_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test'
 count_images_per_folder(folder_test_path)
 
 # Dataset 1: Train 51777-- Test 17011 - 3917 = 13094
-# Dataset 2: Train 90751 -- Test 27860 - 3917 = 23943
+# Dataset 2: Train 90750 -- Test 27860 - 3869 = 23991 --> Main
 
 # Processed Dataset 1: Train 51210 -- Test 16864 - 3876 = 12988
-# Processed Dataset 2: Train 89852 -- Test 27612 - 3876 = 23736
+# Processed Dataset 2: Train 89853 -- Test 27612 - 3869 = 23743

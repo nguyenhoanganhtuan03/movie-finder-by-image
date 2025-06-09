@@ -9,7 +9,7 @@ def is_dominated_by_one_color(image_path, threshold=0.9):
         return True  # ảnh lỗi => bỏ qua
 
     # Resize nhỏ lại để tăng tốc xử lý
-    img_resized = cv2.resize(img, (128, 128))
+    img_resized = cv2.resize(img, (224, 224))
     pixels = img_resized.reshape(-1, 3)
 
     # Làm tròn giá trị màu để giảm số lượng màu cần phân biệt
@@ -47,6 +47,6 @@ def copy_valid_images(input_root, output_root, threshold=0.9):
                 print(f"Error processing {file_path}: {e}")
 
 # Sử dụng:
-input_root = "E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Test"
-output_root = "E:\\Data\\Movie_Dataset\\Process_Frames_2\\Test"
+input_root = "E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Test"
+output_root = "E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test"
 copy_valid_images(input_root, output_root)

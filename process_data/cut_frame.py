@@ -18,7 +18,7 @@ def safe_folder_name(name):
     return safe_name
 
 # Tách và lưu frame từ video vào thư mục train/test
-def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128, 128)):
+def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(224, 224)):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"❌ Không mở được video: {video_path}")
@@ -131,7 +131,7 @@ def extract_frames_from_video(video_path, train_dir, test_dir, target_size=(128,
     print(f"✅ Đã xử lý xong video: {video_path}\n")
 
 # Xử lý toàn bộ thư mục chứa video
-def process_all_videos(input_root, train_dir, test_dir, target_size=(128, 128)):
+def process_all_videos(input_root, train_dir, test_dir, target_size=(224, 224)):
     os.makedirs(train_dir, exist_ok=True)
     os.makedirs(test_dir, exist_ok=True)
 
@@ -173,8 +173,8 @@ def process_all_videos(input_root, train_dir, test_dir, target_size=(128, 128)):
 
 # Cấu hình đường dẫn dữ liệu
 input_folder = 'E:\\Data\\Movie_Dataset\\Film_Cut_Dataset'
-frames_train = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Train'
-frames_test = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Test'
+frames_train = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Train'
+frames_test = 'E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Test'
 
 # Gọi hàm chính để xử lý
 process_all_videos(input_folder, frames_train, frames_test)
