@@ -9,11 +9,11 @@ from skimage import color
 import faiss
 
 # ==== Cấu hình ====
-image_size = 128
+image_size = 224
 similarity_threshold = 0.8
 base_dir = os.path.dirname(os.path.abspath(__file__))
-index_path = os.path.join(base_dir, "features_faiss_more_data/hog/faiss_features.index")
-label_path = os.path.join(base_dir, "features_faiss_more_data/hog/faiss_labels.npy")
+index_path = os.path.join(base_dir, "faiss_224/hog/faiss_features.index")
+label_path = os.path.join(base_dir, "faiss_224/hog/faiss_labels.npy")
 
 # ==== Load FAISS index, labels, và KMeans ONNX model ====
 if not os.path.exists(index_path):
@@ -33,28 +33,66 @@ except Exception as e:
 
 # ==== Danh sách phim ====
 classes = {
-    1: "21 Ngày Yêu Em", 2: "4 Năm 2 Chàng 1 Tình Yêu", 3: "Ăn Tết Bên Cồn", 4: "Bẫy Ngọt Ngào", 5: "Bệnh Viện Ma",
-    6: "Bí Mật Lại Bị Mất", 7: "Bí Mật Trong Sương Mù", 8: "Bộ Tứ Oan Gia", 9: "Chờ Em Đến Ngày Mai", 10: "Chủ Tịch Giao Hàng",
-    11: "Chuyện Tết", 12: "Cô Ba Sài Gòn", 13: "Đào, Phở Và Piano", 14: "Đất Rừng Phương Nam", 15: "Địa Đạo",
-    16: "Định Mệnh Thiên Ý", 17: "Đôi Mắt Âm Dương", 18: "Em Chưa 18", 19: "Em Là Của Em", 20: "Gái Già Lắm Chiêu 3",
-    21: "Giả Nghèo Gặp Phật", 22: "Hẻm Cụt", 23: "Hoán Đổi", 24: "Kẻ Ẩn Danh", 25: "Kẻ Ăn Hồn",
-    26: "Làm Giàu Với Ma", 27: "Lật Mặt 1", 28: "Linh Miêu: Quỷ Nhập Tràng", 29: "Lộ Mặt", 30: "Ma Da",
-    31: "Mắt Biếc", 32: "Nghề Siêu Dễ", 33: "Những Nụ Hôn Rực Rỡ", 34: "Ông Ngoại Tuổi 30", 35: "Pháp Sư Tập Sự",
-    36: "Quý Cô Thừa Kế", 37: "Ra Mắt Gia Tiên", 38: "Siêu Lừa Gặp Siêu Lầy", 39: "Siêu Trợ Lý", 40: "Tấm Cám: Chuyện Chưa Kể",
-    41: "Taxi Em Tên Gì", 42: "The Call", 43: "Thiên Mệnh Anh Hùng", 44: "Tiểu Thư Và Ba Đầu Gấu", 45: "Trên Bàn Nhậu Dưới Bàn Mưu",
-    46: "Khác"
+    1: "21_Ngay_Yeu_Em",
+    2: "4_Nam_2_Chang_1_Tinh_Yeu",
+    3: "An_Tet_Ben_Con",
+    4: "Bay_Ngot_Ngao",
+    5: "Benh_Vien_Ma",
+    6: "Bi_Mat_Lai_Bi_Mat",
+    7: "Bi_Mat_Trong_Suong_Mu",
+    8: "Bo_Tu_Oan_Gia",
+    9: "Cho_Em_Den_Ngay_Mai",
+    10: "Chu_Tich_Giao_Hang",
+    11: "Chuyen_Tet",
+    12: "Co_Ba_Sai_Gon",
+    13: "Dao_Pho_Va_Piano",
+    14: "Dat_Rung_Phuong_Nam",
+    15: "Dia_Dao",
+    16: "Dinh_Menh_Thien_Y",
+    17: "Doi_Mat_Am_Duong",
+    18: "Em_Chua_18",
+    19: "Em_La_Cua_Em",
+    20: "Gai_Gia_Lam_Chieu_3",
+    21: "Gia_Ngheo_Gap_Phat",
+    22: "Hem_Cut",
+    23: "Hoan_Doi",
+    24: "Ke_An_Danh",
+    25: "Ke_An_Hon",
+    26: "Lam_Giau_Voi_Ma",
+    27: "Lat_Mat_1",
+    28: "Lo_Mat",
+    29: "Ma_Da",
+    30: "Mat_Biec",
+    31: "Nghe_Sieu_De",
+    32: "Nhung_Nu_Hon_Ruc_Ro",
+    33: "Ong_Ngoai_Tuoi_30",
+    34: "Phap_Su_Tap_Su",
+    35: "Quy_Cau",
+    36: "Quy_Co_Thua_Ke",
+    37: "Ra_Mat_Gia_Tien",
+    38: "Sieu_Lua_Gap_Sieu_Lay",
+    39: "Sieu_Tro_Ly",
+    40: "Tam_Cam_Chuyen_Chua_Ke",
+    41: "Taxi_Em_Ten_Gi",
+    42: "The_Call",
+    43: "Thien_Menh_Anh_Hung",
+    44: "Tieu_Thu_Va_Ba_Dau_Gau",
+    45: "Tren_Ban_Nhau_Duoi_Ban_Muu",
+    46: "Khac"
 }
 
 # Trích đặc trưng với HOG
 def extract_hog_features(gray, img_path=None):
     """Trích xuất vector HOG từ ảnh xám"""
     try:
-        hog_vector = hog(gray,
-                         orientations=8,
-                         pixels_per_cell=(16, 16),
-                         cells_per_block=(2, 2),
-                         block_norm='L2-Hys',
-                         feature_vector=True)
+        hog_vector = hog(            
+            gray,
+            orientations=9,                
+            pixels_per_cell=(24, 24),       
+            cells_per_block=(3, 3),
+            block_norm='L2-Hys',
+            feature_vector=True
+        )
 
         if hog_vector is None or len(hog_vector) == 0:
             return None
