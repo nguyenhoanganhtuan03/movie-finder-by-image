@@ -110,7 +110,7 @@ async def search_movie_by_file(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Upload failed: {str(e)}"})
 
-    predicted_names = predict_film_auto(file_path)  # Giờ trả về list[str]
+    predicted_names = predict_film_auto(file_path)  
 
     results = []
     for name in predicted_names:
