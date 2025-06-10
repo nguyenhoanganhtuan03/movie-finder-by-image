@@ -5,3 +5,4 @@ backend/app/uploads
 backend/app/models/models_nlp/vector_db
 backend/app/models/models_nlp/.env
 backend/app/.env
+backend/app/models/faiss_224
