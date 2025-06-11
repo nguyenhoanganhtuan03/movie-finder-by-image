@@ -244,7 +244,7 @@ export default {
   flex-direction: column;
   border: 1px solid #ccc;
   width: 350px;
-  height: 80vh; /* chiều cao cố định */
+  height: 80vh;
   max-height: 80vh;
 }
 
@@ -263,19 +263,31 @@ export default {
 }
 
 /* Container chính phần chat + input */
-.chat-widget > div:nth-child(2) {
+.chat-widget>div:nth-child(2) {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  height: calc(100% - 56px); /* trừ header cao 56px */
+  min-height: 0;
 }
 
 /* Container chứa tin nhắn */
 .flex-grow-1.p-3.overflow-auto {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 1rem;
+  min-height: 0;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 1rem;
+}
+
+/* Input chat luôn cố định ở dưới */
+form.p-2.border-top.bg-white.d-flex.gap-2 {
+  flex-shrink: 0;
+  /* ✅ ngăn không cho bị co/ẩn */
+  position: sticky;
+  bottom: 0;
+  background-color: #fff;
+  z-index: 5;
+  border-top: 1px solid #ddd;
 }
 
 /* Các tin nhắn và phần input giữ nguyên */

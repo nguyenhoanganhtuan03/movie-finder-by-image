@@ -2,6 +2,7 @@ import os
 import requests
 import csv
 import numpy as np
+from collections import Counter
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 import faiss
@@ -10,8 +11,8 @@ import faiss
 load_dotenv()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 INDEX_PATH = os.path.join(base_dir, "vector_db/index_movie.faiss")
-PROMPT_MAPPING_PATH = os.path.join(base_dir, "vector_db/prompt_mapping.csv")
-SIMILARITY_THRESHOLD = 0.3
+LABELS_MAPPING_PATH = os.path.join(base_dir, "vector_db/labels_mapping.csv")
+SIMILARITY_THRESHOLD = 0.5
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 METADATA_PATH = os.path.join(base_dir, "vector_db/metadata.csv")
 
@@ -45,28 +46,16 @@ def load_metadata(path):
 
 metadata_mapping = load_metadata(METADATA_PATH)
 
-def load_prompt_mapping(path):
+def load_labels_mapping(path):
     mapping = {}
-    if os.path.exists(path):
-        with open(path, encoding='utf-8') as f:
-            next(f)
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                parts = line.split(",", 1)
-                if len(parts) != 2:
-                    # print(f"Bỏ qua dòng không hợp lệ: {line}")
-                    continue
-                idx, prompt = parts
-                try:
-                    mapping[int(idx)] = prompt
-                except ValueError:
-                    # print(f"Bỏ qua dòng có index không phải số: {line}")
-                    pass
+    with open(path, encoding='utf-8') as f:
+        next(f)  # Bỏ dòng tiêu đề
+        for line in f:
+            index, name = line.strip().split(',', 1)
+            mapping[int(index)] = name
     return mapping
 
-prompt_mapping = load_prompt_mapping(PROMPT_MAPPING_PATH)
+labels_mapping = load_labels_mapping(LABELS_MAPPING_PATH)
 
 # ========== HÀM GỌI GEMINI API ==========
 def call_gemini_api(prompt, api_key=GEMINI_API_KEY):
@@ -137,17 +126,13 @@ NHIỆM VỤ:
 - Từ câu hỏi, hãy xác định các keywords chính trong câu hỏi
 - Trích xuất các thông tin: thể loại, thời lượng, đạo diễn, diễn viên, năm ra mắt, nội dung
 
-YÊU CẦU ĐỊNH DẠNG TRẢ LỜI:
-Trả lời chính xác theo mẫu sau (thay thế các phần trong ngoặc nhọn):
-
-"Một bộ phim thể loại {{genre}}, kéo dài {{duration}} phút, được đạo diễn bởi {{director}}, với sự tham gia của {{actor}}, ra mắt vào năm {{year}}. Nội dung phim: {{description}}"
+YÊU CẦU ĐỊNH DẠNG TRẢ LỜI: các từ khóa chính, ngăn cách bằng dấu phẩy
 
 LưU Ý:
-- Nếu không tìm thấy thông tin nào, hãy đền thông tin đó bằng chữ "x".
 - Chỉ sử dụng thông tin có trong câu hỏi người dùng.
 Ví dụ:
     - CÂU HỎI NGƯỜI DÙNG: phim kinh dị có Việt Hương đóng
-    - TRẢ LỜI: Một bộ phim thể loại kinh dị, kéo dài x phút, được đạo diễn bởi x, với sự tham gia của Việt Hơng, ra mắt vào năm x. Nội dung phim: x
+    - TRẢ LỜI: kinh dị, Việt Hương
 
 TRẢ LỜI:"""
 
@@ -155,21 +140,30 @@ TRẢ LỜI:"""
 
 # ========== HÀM PHÂN TÍCH CÂU HỎI ==========
 def search_movies_by_user_query(user_query, top_k=5):
-    # 1. Sinh prompt truy vấn từ Gemini
+    # 1. Tạo prompt truy vấn (dạng: "hành động, võ thuật, hồi hộp")
     search_prompt = create_keyword_analysis_prompt(user_query)
 
-    # 2. Embed và tìm trong FAISS
-    query_vec = l2_normalize(embed_text(search_prompt).astype('float32'))
-    distances, indices = index.search(query_vec, top_k)
+    # 2. Tách từ khóa theo dấu phẩy
+    keywords = [kw.strip().lower() for kw in search_prompt.split(",") if kw.strip()]
 
-    results = []
-    for dist, idx in zip(distances[0], indices[0]):
-        similarity = 1 - dist / 2
-        if similarity >= SIMILARITY_THRESHOLD:
-            movie_name = metadata_mapping.get(idx, f"Phim có ID {idx}")
-            results.append((movie_name, similarity))
+    # 3. Truy vấn FAISS cho từng từ khóa
+    matched_names = []
 
-    return search_prompt, results
+    for keyword in keywords:
+        query_vec = l2_normalize(embed_text(keyword).astype('float32')).reshape(1, -1)
+        distances, indices = index.search(query_vec, top_k)
+
+        for dist, idx in zip(distances[0], indices[0]):
+            similarity = 1 - dist / 2
+            if similarity >= SIMILARITY_THRESHOLD:
+                movie_name = labels_mapping.get(idx, f"Phim có ID {idx}")
+                matched_names.append(movie_name)
+
+    # 4. Đếm tần suất tên phim xuất hiện
+    movie_counts = Counter(matched_names)
+    top_movies = movie_counts.most_common(top_k)
+
+    return search_prompt, top_movies
 
 # ========== MAIN ==========
 # while True:
@@ -178,14 +172,14 @@ def search_movies_by_user_query(user_query, top_k=5):
 #         print("👋 Thoát chương trình.")
 #         break
 
-#     prompt, movies = search_movies_by_user_query(user_input)
-#     # name_movies = [name for name, _ in movies]
-#     # print(name_movies)
+#     prompt, top_movies = search_movies_by_user_query(user_input, top_k=8)
+#     name_movies = [name for name, _ in top_movies]
+#     print(name_movies)
 
 #     print("\n🧠 Prompt dùng để truy vấn:", prompt)
-#     if movies:
+#     if top_movies:
 #         print("🎬 Kết quả tìm được:")
-#         for name, score in movies:
-#             print(f"- {name} (độ tương đồng: {score:.2f})")
+#         for name, score in top_movies:
+#             print(f"- {name}")
 #     else:
 #         print("❌ Không tìm thấy phim phù hợp.\n")
