@@ -127,7 +127,7 @@
         <div class="row">
           <!-- Số lượng phim được lọc -->
           <div class="mb-3">
-            <strong>Tổng số phim:</strong> {{ filteredMovies.length }}
+            <strong>Số lượng phim:</strong> {{ filteredMovies.length }}
           </div>
           <MovieCardAdmin
             v-for="movie in filteredMovies"
