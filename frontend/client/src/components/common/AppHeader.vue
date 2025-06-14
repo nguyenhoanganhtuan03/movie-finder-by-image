@@ -1,7 +1,7 @@
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
     <router-link to="/" class="navbar-brand d-flex align-items-center">
-      <i class="fas fa-film me-2"></i> PhimHay
+      <i class="fas fa-film me-2"></i> Phim Việt
     </router-link>
     <button
       class="navbar-toggler"

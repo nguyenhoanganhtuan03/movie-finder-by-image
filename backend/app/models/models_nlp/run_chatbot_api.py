@@ -118,7 +118,7 @@ HƯỚNG DẪN:
 - Ưu tiên sử dụng thông tin từ "THÔNG TIN THAM KHẢO CHO CÂU HỎI HIỆN TẠI"
 - Có thể tham khảo thông tin từ các tìm kiếm trước và lịch sử chat để hiểu ngữ cảnh tốt hơn
 - Trả lời ngắn gọn, chính xác
-- Nếu câu hỏi liên quan đến câu hỏi trước, hãy liên kết thông tin từ các nguồn khác nhau
+- Nếu câu hỏi không có tên phim, ưu tiên tìm phim có trong LỊCH SỬ CUỘC TRÒ CHUYỆN
 - Nếu không tìm thấy thông tin, nói "Tôi không tìm thấy thông tin về câu hỏi này."
 - Trả lời bằng tiếng Việt
 
@@ -194,52 +194,18 @@ class MovieQASystem:
         if current_context:
             self.context_history.append(current_context)
 
-            # Giới hạn số lượng context (chỉ giữ lại 2 context gần nhất)
-            if len(self.context_history) > self.max_contexts:
-                self.context_history.pop(0)  # Xóa context cũ nhất
+            ## Giới hạn số lượng context (chỉ giữ lại 2 context gần nhất)
+            # if len(self.context_history) > self.max_contexts:
+            #     self.context_history.pop(0)  
 
         # Lưu vào lịch sử chat
         self.chat_history.append((question, answer))
 
         # Giới hạn số lượng lịch sử chat
         if len(self.chat_history) > self.max_history:
-            self.chat_history.pop(0)  # Xóa câu hỏi cũ nhất
+            self.chat_history.pop(0)  
 
         return answer
-
-    def clear_history(self):
-        """Xóa lịch sử chat và context"""
-        self.chat_history.clear()
-        self.context_history.clear()
-        return "✅ Đã xóa lịch sử cuộc trò chuyện."
-
-    def show_history(self):
-        """Hiển thị lịch sử chat"""
-        if not self.chat_history:
-            return "📝 Chưa có lịch sử cuộc trò chuyện."
-
-        history_text = "📝 LỊCH SỬ CUỘC TRÒ CHUYỆN:\n" + "=" * 40 + "\n"
-        for i, (q, a) in enumerate(self.chat_history, 1):
-            history_text += f"{i}. ❓ {q}\n   🤖 {a}\n" + "-" * 40 + "\n"
-        return history_text
-
-    def show_context_history(self):
-        """Hiển thị lịch sử context từ vectordb"""
-        if not self.context_history:
-            return "📚 Chưa có context nào được lưu."
-
-        context_text = "📚 LỊCH SỬ CONTEXT (2 LẦN TÌM KIẾM GẦN NHẤT):\n" + "=" * 50 + "\n"
-        for i, context in enumerate(self.context_history, 1):
-            context_text += f"Context {i}:\n{context}\n" + "-" * 50 + "\n"
-        return context_text
-
-    def get_system_status(self):
-        """Hiển thị trạng thái hệ thống"""
-        return f"""📊 TRẠNG THÁI HỆ THỐNG:
-- Số câu hỏi trong lịch sử: {len(self.chat_history)}/{self.max_history}
-- Số context được lưu: {len(self.context_history)}/{self.max_contexts}
-- Giới hạn context: {self.max_contexts} context gần nhất
-- Giới hạn lịch sử chat: {self.max_history} câu hỏi gần nhất"""
 
 # ========== TEST API CONNECTION ==========
 def test_gemini_connection(api_key):
@@ -286,10 +252,7 @@ def main():
     qa_system = MovieQASystem(db, GEMINI_API_KEY)
 
     print("\n🤖 Hệ thống đã sẵn sàng! Hãy đặt câu hỏi về phim ảnh.")
-    print("💡 Lệnh đặc biệt:")
     print("   - 'quit' hoặc 'exit': Thoát chương trình")
-    print("   - 'history': Xem lịch sử chat")
-    print("   - 'clear': Xóa lịch sử chat\n")
 
     # Vòng lặp chính
     while True:
@@ -299,16 +262,6 @@ def main():
             if question.lower() in ['quit', 'exit', 'thoát']:
                 print("👋 Cảm ơn bạn đã sử dụng hệ thống!")
                 break
-
-            # Lệnh xem lịch sử
-            if question.lower() in ['history', 'lịch sử']:
-                print(qa_system.show_history())
-                continue
-
-            # Lệnh xóa lịch sử
-            if question.lower() in ['clear', 'xóa']:
-                print(qa_system.clear_history())
-                continue
 
             if not question:
                 print("⚠️ Vui lòng nhập câu hỏi.")

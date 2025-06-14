@@ -11,15 +11,14 @@
           v-model="searchText"
           type="text"
           class="form-control"
-          placeholder="Nhập từ khoá tìm kiếm..."
+          placeholder="Nhập nội dung tìm kiếm..."
           @keyup.enter="searchByContent"
         />
-        <button class="btn btn-primary" @click="searchByContent">Tìm</button>
       </div>
 
       <!-- Upload ảnh -->
       <div class="mb-3">
-        <label class="form-label">Upload ảnh:</label>
+        <label class="form-label">Tải lên ảnh:</label>
         <input 
           ref="imageInput"
           type="file" 
@@ -34,7 +33,7 @@
 
       <!-- Upload video -->
       <div class="mb-3">
-        <label class="form-label">Upload video (dưới 5 phút):</label>
+        <label class="form-label">Tải lên video (dưới 5 phút):</label>
         <input 
           ref="videoInput"
           type="file" 

@@ -1,9 +1,9 @@
 <template>
     <footer class="bg-dark text-white py-3 mt-5">
       <div class="container text-center">
-        <p class="mb-1">&copy; 2025 PhimHay. All rights reserved.</p>
+        <p class="mb-1">&copy; 2025 PhimViệt. All rights reserved.</p>
         <p class="small">
-          Thiết kế bởi <strong>Bạn</strong> - Xem phim online miễn phí, không quảng cáo.
+          Thiết kế bởi <strong>Anh Tuấn</strong> - Xem phim online miễn phí, không quảng cáo.
         </p>
       </div>
     </footer>
