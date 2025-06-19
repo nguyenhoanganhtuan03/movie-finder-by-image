@@ -56,6 +56,29 @@ class MovieService {
       return null;
     }
   }
+
+  async getByGenre(genre) {
+    try {
+      const response = await this.api.post(`/genre`, {
+        genre: genre
+      });
+      console.log(response.data)
+      return response.data || [];
+    } catch (error) {
+      console.error("Lỗi khi lấy phim theo thể loại:", error);
+      return [];
+    }
+  }
+
+  async getGenres() {
+    try {
+        const response = await this.api.get("/genres");
+        return response.data || [];
+    } catch (error) {
+        console.error("Lỗi khi lấy danh sách thể loại:", error);
+        return [];
+    }
+}
 }
 
 export default new MovieService();

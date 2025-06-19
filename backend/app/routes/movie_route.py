@@ -4,9 +4,10 @@ from fastapi.responses import JSONResponse
 import shutil
 import os
 from uuid import uuid4
+from urllib.parse import unquote
 
-from app.controllers.movie_controller import add_movie, update_movie, delete_movie, search_movies_by_genre
-from app.controllers.movie_controller import get_all_movies, get_movie_by_id, search_movies_by_name
+from app.controllers.movie_controller import add_movie, update_movie, delete_movie, search_movies_by_genre, get_movies_by_year
+from app.controllers.movie_controller import get_all_movies, get_movie_by_id, search_movies_by_name, get_all_genres
 from app.entities.movie_model import MovieModel
 from app.models.run_model_cnn_faiss import predict_film_auto
 # from app.models.run_model_sift_faiss import predict_film_auto
@@ -129,13 +130,27 @@ async def search_movie_by_file(file: UploadFile = File(...)):
     }
 
 # Route tìm kiếm phim theo thể loại
-@router.get("/movies/genre/{genre}")
-async def get_movies_by_genre(genre: str):
+@router.post("/genre")
+async def get_movies_by_genre(payload: dict = Body(...)):
+    genre = payload.get("genre", "").strip()
+    if not genre:
+        raise HTTPException(status_code=400, detail="Thiếu thể loại")
+
     try:
         movies = await search_movies_by_genre(genre)
         return movies
     except HTTPException as e:
         raise e
+    
+# Route lấy tất cả genre
+@router.get("/genres")
+async def list_all_genres():
+    return await get_all_genres()
+
+# Route lấy phim theo nhóm năm
+@router.get("/yor/{year}")
+async def fetch_movies_by_year(year: int):
+    return await get_movies_by_year(year)
 
 # Thêm route vào app
 app.include_router(router)

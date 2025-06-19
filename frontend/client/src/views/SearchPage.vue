@@ -82,14 +82,13 @@
 
     <!-- Nút bật chatbot -->
     <button
-      v-if="!isChatOpen"
-      class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
-      style="width: 60px; height: 60px; z-index: 10000;"
-      @click="isChatOpen = true"
-      title="Mở chatbot"
-    >
-      <i class="bi bi-chat-dots-fill fs-4"></i>
-    </button>
+        v-if="!isChatOpen"
+        @click="isChatOpen = true"
+        class="btn btn-primary rounded-circle shadow-lg"
+        style="position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; z-index: 9999;"
+      >
+        <i class="bi bi-robot fs-4"></i>
+      </button>
 
     <!-- Chatbot widget -->
     <MiniChatWidget v-if="isChatOpen" @close="isChatOpen = false" />

@@ -19,6 +19,9 @@
           <router-link to="/" class="nav-link" active-class="active" exact>Trang chủ</router-link>
         </li>
         <li class="nav-item">
+          <router-link to="/genre" class="nav-link" active-class="active" exact>Thể loại</router-link>
+        </li>
+        <li class="nav-item">
           <router-link to="/search" class="nav-link" active-class="active">Tìm kiếm nâng cao</router-link>
         </li>
         <li class="nav-item" v-if="authStore.user?.position === 'admin'">

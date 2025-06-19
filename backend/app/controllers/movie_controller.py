@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from typing import Optional, List
+from datetime import datetime
 
 from app.entities.movie_model import MovieModel
 from app.database import db
@@ -137,5 +138,34 @@ async def search_movies_by_genre(genre: str):
     # Kiểm tra nếu không có phim nào tìm được
     if not movies:
         raise HTTPException(status_code=404, detail="No movies found for this genre")
+
+    return movies
+
+# Lấy tất cả các thể loại
+async def get_all_genres():
+    genres_set = set()
+
+    # Chỉ lấy field "genre" của mỗi movie
+    cursor = db["movies"].find({}, {"genre": 1})
+
+    async for doc in cursor:
+        genres = doc.get("genre", [])
+        for g in genres:
+            genres_set.add(g.strip())
+
+    if not genres_set:
+        raise HTTPException(status_code=404, detail="No genres found")
+
+    return sorted(genres_set) 
+
+# Lấy các phim theo năm phát hành cụ thể
+async def get_movies_by_year(year: int):
+    movies = await db["movies"].find({"year_of_release": year}).to_list(length=None)
+
+    if not movies:
+        raise HTTPException(status_code=404, detail=f"No movies found for year {year}")
+
+    for movie in movies:
+        movie["_id"] = str(movie["_id"])
 
     return movies

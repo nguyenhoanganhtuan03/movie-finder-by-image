@@ -9,6 +9,7 @@ import MoviePage from "@/views/MoviePage.vue";
 import StaffLogin from "@/views/StaffLogin.vue";
 import AdminPage from "@/views/AdminPage.vue";
 import SearchPage from "@/views/SearchPage.vue";
+import GenrePage from "@/views/GenrePage.vue";
 
 
 const routes = [
@@ -75,6 +76,12 @@ const routes = [
         name: "searchPage",
         component: SearchPage,
     },
+
+    {
+        path: "/genre",
+        name: "genrePage",
+        component: GenrePage,
+    }
 
 ]
 
