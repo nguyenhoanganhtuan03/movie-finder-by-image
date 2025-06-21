@@ -130,7 +130,17 @@ class MovieService {
           console.error("Lỗi khi lấy danh sách thể loại:", error);
           return [];
       }
-  }
+    }
+
+    async getByYear(year) {
+      try {
+        const response = await this.api.get(`/yor/${year}`);
+        return response.data || [];
+      } catch (error) {
+        console.error("Lỗi khi lấy phim theo năm:", error);
+        return [];
+      }
+    }
 }
 
 export default new MovieService();
