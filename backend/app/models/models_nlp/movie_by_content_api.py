@@ -12,7 +12,7 @@ load_dotenv()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 INDEX_PATH = os.path.join(base_dir, "vector_db/index_movie.faiss")
 LABELS_MAPPING_PATH = os.path.join(base_dir, "vector_db/labels_mapping.csv")
-SIMILARITY_THRESHOLD = 0.5
+# SIMILARITY_THRESHOLD = 0.8
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 METADATA_PATH = os.path.join(base_dir, "vector_db/metadata.csv")
 
@@ -137,7 +137,7 @@ TRẢ LỜI:"""
     return call_gemini_api(prompt)
 
 # ========== HÀM PHÂN TÍCH CÂU HỎI ==========
-def search_movies_by_user_query(user_query):
+def search_movies_by_user_query(user_query, SIMILARITY_THRESHOLD, n_movies):
     search_prompt = create_keyword_analysis_prompt(user_query)
     keywords = [kw.strip().lower() for kw in search_prompt.split(",") if kw.strip()]
 
@@ -145,7 +145,7 @@ def search_movies_by_user_query(user_query):
 
     for keyword in keywords:
         query_vec = l2_normalize(embed_text(keyword).astype('float32')).reshape(1, -1)
-        distances, indices = index.search(query_vec, 20)  
+        distances, indices = index.search(query_vec, 10)  
 
         for dist, idx in zip(distances[0], indices[0]):
             similarity = 1 - dist / 2
@@ -160,7 +160,7 @@ def search_movies_by_user_query(user_query):
     )
 
     # Tách 4 phim xuất hiện nhiều nhất (ưu tiên vector gần hơn khi bằng nhau)
-    top_4_movies = [(name, stats["count"]) for name, stats in sorted_movies[:4]]
+    top_n_movies = [(name, stats["count"]) for name, stats in sorted_movies[:n_movies]]
 
     # Tất cả phim phù hợp (có thể dùng cho backend hoặc thống kê)
     all_matched_movies = [(name, stats["count"]) for name, stats in sorted_movies]
@@ -168,7 +168,7 @@ def search_movies_by_user_query(user_query):
     print(f"Từ khóa: {search_prompt}")
     print(all_matched_movies)
 
-    return search_prompt, top_4_movies, all_matched_movies
+    return search_prompt, top_n_movies, all_matched_movies
 
 # ========== MAIN ==========
 # while True:

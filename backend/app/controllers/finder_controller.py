@@ -6,13 +6,13 @@ from app.database import db
 from app.models.models_nlp.movie_by_content_api import search_movies_by_user_query
 
 # Tìm movie bằng văn bản
-async def search_movie_by_content(content: str):
+async def search_movie_by_content(content: str, SIMILARITY_THRESHOLD, n_movies):
     if not content:
         raise HTTPException(status_code=400, detail="Nội dung tìm kiếm không được để trống.")
 
     try:
         # Gọi hàm tìm kiếm
-        _, results, _ = search_movies_by_user_query(content)
+        _, results, _ = search_movies_by_user_query(content, SIMILARITY_THRESHOLD, n_movies)
 
         # Chỉ lấy danh sách tên phim
         movie_names = [name for name, _ in results]

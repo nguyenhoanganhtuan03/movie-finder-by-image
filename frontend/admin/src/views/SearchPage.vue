@@ -5,66 +5,84 @@
     <div class="container my-5">
       <h2 class="mb-4">Tìm kiếm phim</h2>
 
-      <!-- Ô tìm kiếm -->
-      <div class="input-group mb-3">
-        <input
-          v-model="searchText"
-          type="text"
-          class="form-control"
-          placeholder="Nhập nội dung tìm kiếm..."
-          @keyup.enter="searchByContent"
-        />
-      </div>
+      <!-- Chia 2 phần -->
+      <div class="d-flex flex-wrap gap-4">
+        <!-- BÊN TRÁI: Nhập mô tả, upload ảnh, upload video -->
+        <div class="flex-grow-1" style="min-width: 280px;">
+          <!-- Nhập mô tả -->
+          <div class="mb-3">
+            <label class="form-label">Nhập mô tả ngắn gọn:</label>
+            <input
+              v-model="searchText"
+              type="text"
+              class="form-control"
+              placeholder="Vui lòng nhập mô tả rõ ràng để có thể tìm kiếm chính xác hơn"
+              @keyup.enter="searchByContent"
+            />
+          </div>
 
-      <!-- Upload ảnh + chọn ngưỡng tương đồng -->
-      <div class="mb-3 d-flex align-items-end gap-3 flex-wrap">
-        <div style="flex: 1;">
-          <label class="form-label">Tải lên ảnh:</label>
-          <input 
-            ref="imageInput"
-            type="file" 
-            accept="image/jpeg,image/jpg,image/png" 
-            @change="handleImageUpload" 
-            class="form-control" 
-          />
+          <!-- Upload ảnh -->
+          <div class="mb-3">
+            <label class="form-label">Tải lên ảnh:</label>
+            <input 
+              ref="imageInput"
+              type="file" 
+              accept="image/jpeg,image/jpg,image/png" 
+              @change="handleImageUpload" 
+              class="form-control" 
+            />
+          </div>
+
+          <!-- Upload video -->
+          <div class="mb-3">
+            <label class="form-label">Tải lên video (dưới 5 phút):</label>
+            <input 
+              ref="videoInput"
+              type="file" 
+              accept="video/mp4,video/mov" 
+              @change="handleVideoUpload" 
+              class="form-control" 
+            />
+            <div v-if="isUploading" class="mt-2">
+              <span class="text-info">Đang xử lý...</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Chọn độ tương đồng -->
-        <div style="width: 180px;">
-          <label class="form-label">Ngưỡng tương đồng:</label>
-          <select v-model.number="similarityThreshold" class="form-select">
-            <option v-for="n in 11" :key="n" :value="(n - 1) * 0.1">
-              {{ ((n - 1) * 0.1).toFixed(1) }}
-            </option>
-          </select>
-        </div>
-      </div>
+        <!-- BÊN PHẢI: Ngưỡng tương đồng -->
+        <div style="min-width: 200px;">
+          <!-- Ngưỡng cho ảnh -->
+          <div class="mb-3">
+            <label class="form-label">Ngưỡng tương đồng:</label>
+            <select v-model.number="similarityThreshold" class="form-select">
+              <option v-for="n in 11" :key="'img-' + n" :value="(n - 1) * 0.1">
+                {{ ((n - 1) * 0.1).toFixed(1) }}
+              </option>
+            </select>
+          </div>
 
-      <!-- Upload video -->
-      <div class="mb-3">
-        <label class="form-label">Tải lên video (dưới 5 phút):</label>
-        <input 
-          ref="videoInput"
-          type="file" 
-          accept="video/mp4,video/mov" 
-          @change="handleVideoUpload" 
-          class="form-control" 
-        />
-        <div v-if="isUploading" class="mt-2">
-          <span class="text-info">Đang xử lý...</span>
+          <!-- Chọn số lượng phim hiển thị -->
+          <div class="mb-3">
+            <label class="form-label">Số lượng tìm kiếm:</label>
+            <select v-model.number="resultLimit" class="form-select">
+              <option v-for="n in 20" :key="'limit-' + n" :value="n">
+                {{ n }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
       <!-- Video preview nếu có -->
       <div v-if="videoURL" class="d-flex align-items-center justify-content-center mt-3 gap-3 flex-wrap">
-          <video :src="videoURL" controls style="max-width: 100%; max-height: 300px;"></video>
-          <button @click="clearVideo" class="btn btn-sm btn-secondary">Xóa video</button>
+        <video :src="videoURL" controls style="max-width: 100%; max-height: 300px;"></video>
+        <button @click="clearVideo" class="btn btn-sm btn-secondary">Xóa video</button>
       </div>
 
       <!-- Ảnh preview nếu có -->
       <div v-if="imageURL" class="d-flex align-items-center justify-content-center mt-3 gap-3 flex-wrap">
-          <img :src="imageURL" alt="Ảnh upload" style="max-width: 100%; max-height: 300px;" />
-          <button @click="clearImage" class="btn btn-sm btn-secondary">Xóa ảnh</button>
+        <img :src="imageURL" alt="Ảnh upload" style="max-width: 100%; max-height: 300px;" />
+        <button @click="clearImage" class="btn btn-sm btn-secondary">Xóa ảnh</button>
       </div>
 
       <!-- Hiển thị tên phim được dự đoán -->
@@ -130,7 +148,8 @@ export default {
       predictedName: "",
       isUploading: false,
       isChatOpen: false,
-      similarityThreshold: 0.8 
+      similarityThreshold: 0.8,
+      resultLimit: 6
     };
   },
   methods: {
@@ -143,7 +162,7 @@ export default {
       }
 
       try {
-        const result = await FinderService.searchByContent(text); 
+        const result = await FinderService.searchByContent(text, this.similarityThreshold, this.resultLimit); 
 
         this.searchResults = result.results || [];
         this.predictedName = result.predicted_name || "";
