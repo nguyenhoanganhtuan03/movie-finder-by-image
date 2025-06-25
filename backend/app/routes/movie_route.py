@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, FastAPI, UploadFile, File
-from fastapi import Body, Path, Query
+from fastapi import Body, Path, Query, Form
 from fastapi.responses import JSONResponse
 import shutil
 import os
@@ -93,7 +93,9 @@ async def search_movie(name: str = Query(..., description="Partial movie name"))
 
 # Tìm kiếm phim bằng file ảnh, video
 @router.post("/search-by-file")
-async def search_movie_by_file(file: UploadFile = File(...)):
+async def search_movie_by_file(
+    file: UploadFile = File(...),
+    similarity_threshold: float = Form(default=None)):  
     allowed_extensions = ['.jpg', '.jpeg', '.png', '.mp4', '.mov']
     if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
         raise HTTPException(
@@ -111,7 +113,7 @@ async def search_movie_by_file(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": f"Upload failed: {str(e)}"})
 
-    predicted_names = predict_film_auto(file_path)  
+    predicted_names = predict_film_auto(file_path, similarity_threshold=similarity_threshold)
 
     results = []
     for name in predicted_names:

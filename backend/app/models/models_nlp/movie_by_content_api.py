@@ -2,7 +2,7 @@ import os
 import requests
 import csv
 import numpy as np
-from collections import Counter
+from collections import Counter, defaultdict
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 import faiss
@@ -116,9 +116,7 @@ def create_keyword_analysis_prompt(user_query):
     prompt = f"""Bạn là một chuyên gia phân tích thông tin phim ảnh. Nhiệm vụ của bạn là:
 
 1. PHÂN TÍCH câu hỏi của người dùng để tìm tên phim
-2. TÌM KIẾM thông tin phim từ dữ liệu được cung cấp
-3. TRÍCH XUẤT các thông tin chính của phim
-4. TRẢ VỀ kết quả theo định dạng yêu cầu
+2. TRẢ VỀ kết quả theo định dạng yêu cầu
 
 CÂU HỎI NGƯỜI DÙNG: "{user_query}"
 
@@ -131,39 +129,46 @@ YÊU CẦU ĐỊNH DẠNG TRẢ LỜI: các từ khóa chính, ngăn cách bằn
 LưU Ý:
 - Chỉ sử dụng thông tin có trong câu hỏi người dùng.
 Ví dụ:
-    - CÂU HỎI NGƯỜI DÙNG: phim kinh dị có Việt Hương đóng
-    - TRẢ LỜI: kinh dị, Việt Hương
+    - CÂU HỎI NGƯỜI DÙNG: phim kinh dị, hài, có Trấn Thành đóng, lấy bối cảnh bệnh viện
+    - TRẢ LỜI: kinh dị, hài, Trấn Thành, bệnh viện
 
 TRẢ LỜI:"""
 
     return call_gemini_api(prompt)
 
 # ========== HÀM PHÂN TÍCH CÂU HỎI ==========
-def search_movies_by_user_query(user_query, top_k=5):
-    # 1. Tạo prompt truy vấn (dạng: "hành động, võ thuật, hồi hộp")
+def search_movies_by_user_query(user_query):
     search_prompt = create_keyword_analysis_prompt(user_query)
-
-    # 2. Tách từ khóa theo dấu phẩy
     keywords = [kw.strip().lower() for kw in search_prompt.split(",") if kw.strip()]
 
-    # 3. Truy vấn FAISS cho từng từ khóa
-    matched_names = []
+    movie_stats = defaultdict(lambda: {"count": 0, "min_distance": float("inf")})
 
     for keyword in keywords:
         query_vec = l2_normalize(embed_text(keyword).astype('float32')).reshape(1, -1)
-        distances, indices = index.search(query_vec, top_k)
+        distances, indices = index.search(query_vec, 20)  
 
         for dist, idx in zip(distances[0], indices[0]):
             similarity = 1 - dist / 2
             if similarity >= SIMILARITY_THRESHOLD:
                 movie_name = labels_mapping.get(idx, f"Phim có ID {idx}")
-                matched_names.append(movie_name)
+                movie_stats[movie_name]["count"] += 1
+                movie_stats[movie_name]["min_distance"] = min(movie_stats[movie_name]["min_distance"], dist)
 
-    # 4. Đếm tần suất tên phim xuất hiện
-    movie_counts = Counter(matched_names)
-    top_movies = movie_counts.most_common(top_k)
+    sorted_movies = sorted(
+        movie_stats.items(),
+        key=lambda x: (-x[1]["count"], x[1]["min_distance"])
+    )
 
-    return search_prompt, top_movies
+    # Tách 4 phim xuất hiện nhiều nhất (ưu tiên vector gần hơn khi bằng nhau)
+    top_4_movies = [(name, stats["count"]) for name, stats in sorted_movies[:4]]
+
+    # Tất cả phim phù hợp (có thể dùng cho backend hoặc thống kê)
+    all_matched_movies = [(name, stats["count"]) for name, stats in sorted_movies]
+
+    print(f"Từ khóa: {search_prompt}")
+    print(all_matched_movies)
+
+    return search_prompt, top_4_movies, all_matched_movies
 
 # ========== MAIN ==========
 # while True:
@@ -172,7 +177,7 @@ def search_movies_by_user_query(user_query, top_k=5):
 #         print("👋 Thoát chương trình.")
 #         break
 
-#     prompt, top_movies = search_movies_by_user_query(user_input, top_k=8)
+#     prompt, top_movies = search_movies_by_user_query(user_input)
 #     name_movies = [name for name, _ in top_movies]
 #     print(name_movies)
 

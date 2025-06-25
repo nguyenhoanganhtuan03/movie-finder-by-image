@@ -12,7 +12,7 @@ async def search_movie_by_content(content: str):
 
     try:
         # Gọi hàm tìm kiếm
-        _, results = search_movies_by_user_query(content)
+        _, results, _ = search_movies_by_user_query(content)
 
         # Chỉ lấy danh sách tên phim
         movie_names = [name for name, _ in results]

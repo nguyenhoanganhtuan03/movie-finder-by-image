@@ -42,6 +42,8 @@
           </select>
         </div>
 
+        <div>-</div>
+
         <div>
           <select
             v-model="endYear"
@@ -104,11 +106,14 @@ export default {
     return {
       searchQuery: "",
       isChatOpen: false,
-      startYear: "",
-      endYear: "",
+      startYear: 2024,
+      endYear: 2025,
       filteredMovies: [],
-      availableYears: Array.from({ length: 16 }, (_, i) => 2025 - i), // từ 2025 về 2010
+      availableYears: Array.from({ length: 16 }, (_, i) => 2025 - i), 
     };
+  },
+  mounted() {
+      this.loadMoviesByYearRange(); 
   },
   methods: {
     async loadMoviesByYearRange() {

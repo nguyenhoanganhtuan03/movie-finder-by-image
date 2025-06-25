@@ -15,7 +15,7 @@ image_size = 224
 base_dir = os.path.dirname(os.path.abspath(__file__))
 index_path = os.path.join(base_dir, "faiss_224/vgg16/faiss_features.index")
 label_path = os.path.join(base_dir, "faiss_224/vgg16/faiss_labels.npy")
-similarity_threshold = 0.8
+# similarity_threshold = 0.8
 
 # ==== Load model ResNet50 ====
 # model = ResNet50(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
@@ -50,7 +50,7 @@ def l2_normalize(vectors):
 
 # ==== Hàm dự đoán ====
 # Hàm xử lý ảnh
-def predict_film_from_image(img_path):
+def predict_film_from_image(img_path, similarity_threshold):
     img = cv2.imread(img_path)
     img = cv2.resize(img, (image_size, image_size))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -89,7 +89,7 @@ def predict_film_from_image(img_path):
     return result_labels
 
 # Hàm xử lý video
-def predict_film_from_video(video_path):
+def predict_film_from_video(video_path, similarity_threshold):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         return ["❌ Không mở được video."]
@@ -163,15 +163,15 @@ def predict_film_from_video(video_path):
 
 
 # Hàm tự động nhận biết loại file và xử lý
-def predict_film_auto(input_path):
+def predict_film_auto(input_path, similarity_threshold):
     try:
         start_time = time.time()
         ext = os.path.splitext(input_path)[-1].lower()
 
         if ext in ['.jpg', '.jpeg', '.png']:
-            film_name = predict_film_from_image(input_path)
+            film_name = predict_film_from_image(input_path, similarity_threshold)
         elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
-            film_name = predict_film_from_video(input_path)
+            film_name = predict_film_from_video(input_path, similarity_threshold)
         else:
             return "❌ Định dạng không hỗ trợ."
 

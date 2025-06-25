@@ -16,18 +16,27 @@
         />
       </div>
 
-      <!-- Upload ảnh -->
-      <div class="mb-3">
-        <label class="form-label">Tải lên ảnh:</label>
-        <input 
-          ref="imageInput"
-          type="file" 
-          accept="image/jpeg,image/jpg,image/png" 
-          @change="handleImageUpload" 
-          class="form-control" 
-        />
-        <div v-if="isUploading" class="mt-2">
-          <span class="text-info">Đang xử lý...</span>
+      <!-- Upload ảnh + chọn ngưỡng tương đồng -->
+      <div class="mb-3 d-flex align-items-end gap-3 flex-wrap">
+        <div style="flex: 1;">
+          <label class="form-label">Tải lên ảnh:</label>
+          <input 
+            ref="imageInput"
+            type="file" 
+            accept="image/jpeg,image/jpg,image/png" 
+            @change="handleImageUpload" 
+            class="form-control" 
+          />
+        </div>
+
+        <!-- Chọn độ tương đồng -->
+        <div style="width: 180px;">
+          <label class="form-label">Ngưỡng tương đồng:</label>
+          <select v-model.number="similarityThreshold" class="form-select">
+            <option v-for="n in 11" :key="n" :value="(n - 1) * 0.1">
+              {{ ((n - 1) * 0.1).toFixed(1) }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -82,14 +91,13 @@
 
     <!-- Nút bật chatbot -->
     <button
-      v-if="!isChatOpen"
-      class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle shadow"
-      style="width: 60px; height: 60px; z-index: 10000;"
-      @click="isChatOpen = true"
-      title="Mở chatbot"
-    >
-      <i class="bi bi-chat-dots-fill fs-4"></i>
-    </button>
+        v-if="!isChatOpen"
+        @click="isChatOpen = true"
+        class="btn btn-primary rounded-circle shadow-lg"
+        style="position: fixed; bottom: 24px; right: 24px; width: 60px; height: 60px; z-index: 9999;"
+      >
+        <i class="bi bi-robot fs-4"></i>
+      </button>
 
     <!-- Chatbot widget -->
     <MiniChatWidget v-if="isChatOpen" @close="isChatOpen = false" />
@@ -114,7 +122,7 @@ export default {
     MiniChatWidget,
   },
   data() {
-    return {
+      return {
       searchText: "",
       videoURL: "",
       imageURL: "",
@@ -122,6 +130,7 @@ export default {
       predictedName: "",
       isUploading: false,
       isChatOpen: false,
+      similarityThreshold: 0.8 
     };
   },
   methods: {
@@ -171,7 +180,7 @@ export default {
         this.clearVideo(); // Xóa video nếu có
         this.imageURL = URL.createObjectURL(file);
         
-        const result = await MovieService.searchByFile(file);
+        const result = await MovieService.searchByFile(file, this.similarityThreshold);
         this.searchResults = result.results || [];
         this.predictedName = result.predicted_name || "";
         console.log(result.results)
@@ -215,7 +224,7 @@ export default {
             this.clearImage(); // Xóa ảnh nếu có
             this.videoURL = URL.createObjectURL(file);
             
-            const result = await MovieService.searchByFile(file);
+            const result = await MovieService.searchByFile(file, this.similarityThreshold);
             this.searchResults = result.results || [];
             this.predictedName = result.predicted_name || "";
 
