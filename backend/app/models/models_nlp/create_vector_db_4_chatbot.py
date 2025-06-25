@@ -5,6 +5,7 @@ from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings.base import Embeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_experimental.text_splitter import SemanticChunker
 from langchain.docstore.document import Document
 
 # ========== CẤU HÌNH ==========
@@ -39,7 +40,6 @@ embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
 # ========== TẠO VECTOR DB ==========
 def create_db():
     prompts = []
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=50)
 
     for doc in collection.find():
         try:
@@ -55,13 +55,15 @@ def create_db():
             description = doc.get("describe", "").strip()
 
             # Prompt mô tả thông tin chung
-            info_prompt = (
-                f"{name} là một bộ phim thể loại {genres}"
-                f"{', kéo dài ' + duration + ' phút' if duration else ''}"
-                f"{', được đạo diễn bởi ' + director if director else ''}"
-                f"{', với sự tham gia của các diễn viên ' + actors if actors else ''}"
-                f"{', ra mắt vào năm ' + year if year else ''}."
-                f"{', Nội dung tóm tắt ngắn gọn của phim là ' + description if description else ''}"
+            info_prompt = (f"""
+                    Tên phim: {name}
+                    Thể loại: {genres}
+                    Thời lượng: {duration} phút
+                    Đạo diễn: {director}
+                    Diễn viên: {actors}
+                    Năm phát hành: {year}
+                    Tóm tắt: {description}
+                    """
             ).strip()
             prompts.append(info_prompt)
 
@@ -73,6 +75,13 @@ def create_db():
         return
 
     # Tạo chunks từ các prompt
+    text_splitter = SemanticChunker(embeddings=embedding_wrapper,
+                                    buffer_size=1,
+                                    breakpoint_threshold_type="percentile",
+                                    breakpoint_threshold_amount=95,
+                                    min_chunk_size=500,
+                                    add_start_index=True)
+    
     docs = [Document(page_content=p) for p in prompts]
     chunks = text_splitter.split_documents(docs)
 

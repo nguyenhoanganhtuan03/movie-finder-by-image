@@ -1,20 +1,30 @@
 <template>
-  <div class="chat-widget position-fixed bottom-0 end-0 m-4 shadow-lg rounded-4 overflow-hidden"
-    style="width: 350px; max-height: 80vh; z-index: 9999;">
+  <div
+    class="chat-widget position-fixed bottom-0 end-0 m-4 shadow-lg rounded-4 overflow-hidden"
+    style="width: 350px; max-height: 80vh; z-index: 9999;"
+  >
     <!-- Header -->
     <div class="bg-primary text-white p-3 d-flex justify-content-between align-items-center">
       <div>
         <i class="bi bi-robot me-2"></i> AI ChatBot
       </div>
-      <button class="btn btn-sm btn-light" @click="handleClose">
-        <i class="bi bi-x"></i>
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-light" @click="resetChat" title="Tạo mới">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button class="btn btn-sm btn-light" @click="handleClose">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Nội dung chat -->
     <div class="bg-light d-flex flex-column h-100" style="height: calc(100% - 56px);">
-      <div ref="chatContainer" class="flex-grow-1 p-3 overflow-auto"
-        style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+      <div
+        ref="chatContainer"
+        class="flex-grow-1 p-3 overflow-auto"
+        style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);"
+      >
         <div v-if="messages.length === 0" class="text-center text-muted py-5">
           <i class="bi bi-chat-heart fs-1"></i>
           <h5 class="mt-3">Chào bạn!</h5>
@@ -23,8 +33,11 @@
 
         <div v-for="(msg, index) in messages" :key="index" class="mb-3">
           <div :class="msg.sender === 'user' ? 'text-end' : 'text-start'">
-            <div class="message-bubble p-2 rounded-3 d-inline-block"
-              :class="msg.sender === 'user' ? 'bg-primary text-white' : 'bg-white'" style="max-width: 75%;">
+            <div
+              class="message-bubble p-2 rounded-3 d-inline-block"
+              :class="msg.sender === 'user' ? 'bg-primary text-white' : 'bg-white'"
+              style="max-width: 75%;"
+            >
               <small class="fw-bold d-block mb-1">
                 <i :class="msg.sender === 'user' ? 'bi bi-person-fill' : 'bi bi-robot'"></i>
                 {{ msg.sender === 'user' ? 'Bạn' : 'AI Bot' }}
@@ -46,8 +59,15 @@
 
       <!-- Input -->
       <form @submit.prevent="sendMessage" class="p-2 border-top bg-white d-flex gap-2">
-        <input ref="messageInput" v-model="userInput" type="text" class="form-control" placeholder="Nhập tin nhắn..."
-          :disabled="isTyping" required />
+        <input
+          ref="messageInput"
+          v-model="userInput"
+          type="text"
+          class="form-control"
+          placeholder="Nhập tin nhắn..."
+          :disabled="isTyping"
+          required
+        />
       </form>
     </div>
   </div>
@@ -215,7 +235,8 @@ export default {
       sendMessage,
       formatTime,
       handleClose,
-      loadChatHistory
+      loadChatHistory,
+      resetChat
     };
   }
 };
@@ -234,12 +255,11 @@ export default {
 }
 
 /* Cố định header */
-.chat-widget>div:first-child {
+.chat-widget > div:first-child {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: #0d6efd;
-  /* giữ màu bg-primary */
+  background-color: #0d6efd; /* giữ màu bg-primary */
   color: white;
   padding: 1rem;
   display: flex;
@@ -282,15 +302,8 @@ form.p-2.border-top.bg-white.d-flex.gap-2 {
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .typing-indicator {
@@ -298,7 +311,6 @@ form.p-2.border-top.bg-white.d-flex.gap-2 {
   gap: 4px;
   align-items: center;
 }
-
 .typing-indicator span {
   width: 8px;
   height: 8px;
@@ -306,27 +318,11 @@ form.p-2.border-top.bg-white.d-flex.gap-2 {
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out;
 }
-
-.typing-indicator span:nth-child(1) {
-  animation-delay: -0.32s;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: -0.16s;
-}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes typing {
-
-  0%,
-  80%,
-  100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
 }
 </style>

@@ -8,9 +8,14 @@
       <div>
         <i class="bi bi-robot me-2"></i> AI ChatBot
       </div>
-      <button class="btn btn-sm btn-light" @click="handleClose">
-        <i class="bi bi-x"></i>
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-light" @click="resetChat" title="Tạo mới">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button class="btn btn-sm btn-light" @click="handleClose">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Nội dung chat -->
@@ -230,7 +235,8 @@ export default {
       sendMessage,
       formatTime,
       handleClose,
-      loadChatHistory
+      loadChatHistory,
+      resetChat
     };
   }
 };

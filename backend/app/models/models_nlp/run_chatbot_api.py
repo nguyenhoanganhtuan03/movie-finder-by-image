@@ -36,29 +36,19 @@ class SentenceTransformerEmbeddingWrapper(Embeddings):
 
 embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
 
-
 # ========== HÀM GỌI GEMINI API ==========
-def call_gemini_api(prompt, api_key):
-    """
-    Gọi Gemini API để tạo câu trả lời
-    """
+def call_gemini_api_conversational(messages, api_key):
     headers = {
         "Content-Type": "application/json"
     }
 
     data = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ],
+        "contents": messages,
         "generationConfig": {
             "temperature": 0.7,
             "topK": 40,
             "topP": 0.95,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 2048,
         }
     }
 
@@ -72,60 +62,73 @@ def call_gemini_api(prompt, api_key):
 
         if response.status_code == 200:
             result = response.json()
-            if "candidates" in result and len(result["candidates"]) > 0:
-                content = result["candidates"][0]["content"]["parts"][0]["text"]
-                return content.strip()
-            else:
-                return "❌ Không nhận được phản hồi từ Gemini API."
-        else:
-            return f"❌ Lỗi API Gemini: {response.status_code} - {response.text}"
+            candidates = result.get("candidates", [])
+            if candidates:
+                return candidates[0]["content"]["parts"][0]["text"].strip()
+            return "❌ Không nhận được phản hồi từ Gemini API."
+        return f"❌ Lỗi API Gemini: {response.status_code} - {response.text}"
 
-    except requests.exceptions.Timeout:
-        return "❌ Timeout khi gọi Gemini API."
-    except requests.exceptions.RequestException as e:
-        return f"❌ Lỗi kết nối: {str(e)}"
     except Exception as e:
-        return f"❌ Lỗi không xác định: {str(e)}"
-
+        return f"❌ Lỗi khi gọi Gemini: {str(e)}"
 
 # ========== TẠO PROMPT TEMPLATE ==========
-def create_qa_prompt(context, question, chat_history=None, previous_contexts=None):
-    """
-    Tạo prompt với lịch sử chat và context từ các tìm kiếm trước
-    """
-    history_text = ""
-    if chat_history:
-        history_text = "\nLỊCH SỬ CUỘC TRÒ CHUYỆN:\n"
-        for i, (q, a) in enumerate(chat_history, 1):
-            history_text += f"{i}. Hỏi: {q}\n   Trả lời: {a}\n"
-        history_text += "\n"
+def create_qa_prompt():
 
-    # Thêm context từ các tìm kiếm trước
-    previous_context_text = ""
-    if previous_contexts:
-        previous_context_text = "\nTHÔNG TIN TỪ CÁC TÌM KIẾM TRƯỚC:\n"
-        for i, prev_context in enumerate(previous_contexts, 1):
-            previous_context_text += f"Context {i}:\n{prev_context}\n\n"
-
-    prompt = f"""Bạn là một trợ lý AI chuyên trả lời câu hỏi về phim ảnh. Sử dụng thông tin sau đây để trả lời câu hỏi một cách chính xác và ngắn gọn.
-
-THÔNG TIN THAM KHẢO CHO CÂU HỎI HIỆN TẠI:
-{context}
-{previous_context_text}{history_text}
-CÂU HỎI HIỆN TẠI: {question}
-
-HƯỚNG DẪN:
-- Ưu tiên sử dụng thông tin từ "THÔNG TIN THAM KHẢO CHO CÂU HỎI HIỆN TẠI"
-- Có thể tham khảo thông tin từ các tìm kiếm trước và lịch sử chat để hiểu ngữ cảnh tốt hơn
-- Trả lời ngắn gọn, chính xác
-- Nếu câu hỏi không có tên phim, ưu tiên tìm phim có trong LỊCH SỬ CUỘC TRÒ CHUYỆN
-- Nếu không tìm thấy thông tin, nói "Tôi không tìm thấy thông tin về câu hỏi này."
-- Trả lời bằng tiếng Việt
-
-TRẢ LỜI:"""
+    prompt = f"""
+                    "Bạn là một trợ lý AI chuyên trả lời câu hỏi về phim ảnh bằng tiếng Việt. "
+                    "Sử dụng thông tin bên dưới để trả lời."
+                    "Hãy trích xuất thông tin như thể loại, đạo diễn, năm phát hành nếu có trong dữ liệu."
+                    "Trả lời chính xác và ngắn gọn. Nếu không rõ, hãy nói 'Tôi không biết.'"
+            """
 
     return prompt
 
+# ========== HỆ THỐNG QA CHÍNH ==========
+class MovieQASystem:
+    def __init__(self, vector_db=None, api_key=None, max_history=10):
+        self.db = vector_db or load_vector_database()
+        self.api_key = api_key or GEMINI_API_KEY
+        self.max_history = max_history
+        self.message_history = [
+            {
+                "role": "user",
+                "parts": [{"text": (create_qa_prompt())}]
+            }
+        ]
+
+    def search_relevant_docs(self, query, k=5):
+        try:
+            return self.db.similarity_search(query, k=k)
+        except Exception as e:
+            print(f"❌ Lỗi khi tìm kiếm: {e}")
+            return []
+
+    def answer_question(self, question):
+        # Tìm context từ FAISS
+        docs = self.search_relevant_docs(question)
+        context = "\n".join(f"- {doc.page_content}" for doc in docs) if docs else ""
+
+        # Gộp context (nếu có) vào câu hỏi mới
+        if context:
+            user_message = f"THÔNG TIN THAM KHẢO:\n{context}\n\nCÂU HỎI: {question}"
+        else:
+            user_message = question
+
+        # Thêm câu hỏi mới vào message history
+        self.message_history.append({"role": "user", "parts": [{"text": user_message}]})
+
+        # Gọi Gemini
+        answer = call_gemini_api_conversational(self.message_history, self.api_key)
+
+        # Thêm câu trả lời vào message history
+        self.message_history.append({"role": "model", "parts": [{"text": answer}]})
+
+        # Cắt bớt nếu quá dài
+        if len(self.message_history) > self.max_history * 2 + 1:
+            self.message_history = [self.message_history[0]] + self.message_history[-(self.max_history * 2):]
+
+        return answer
+    
 # ========== ĐỌC VECTORSTORE FAISS ==========
 def load_vector_database():
     """
@@ -143,69 +146,6 @@ def load_vector_database():
         return db
     except Exception as e:
         raise Exception(f"Lỗi khi load vector database: {e}")
-
-# ========== HỆ THỐNG QA CHÍNH ==========
-class MovieQASystem:
-    def __init__(self, vector_db=load_vector_database(), api_key=GEMINI_API_KEY, max_history=5, max_contexts=2):
-        self.db = vector_db
-        self.api_key = api_key
-        self.chat_history = []
-        self.context_history = []
-        self.max_history = max_history
-        self.max_contexts = max_contexts
-
-    def search_relevant_docs(self, question, k=3):
-        """
-        Tìm kiếm các document liên quan đến câu hỏi
-        """
-        try:
-            docs = self.db.similarity_search(question, k=k)
-            return docs
-        except Exception as e:
-            print(f"❌ Lỗi khi tìm kiếm: {e}")
-            return []
-
-    def answer_question(self, question):
-        """
-        Trả lời câu hỏi dựa trên vector database, lịch sử chat và context trước đó
-        """
-        # Tìm kiếm documents liên quan
-        docs = self.search_relevant_docs(question)
-
-        if not docs:
-            answer = "❌ Không tìm thấy thông tin liên quan đến câu hỏi."
-            current_context = ""
-        else:
-            # Tạo context từ các documents hiện tại
-            current_context = "\n\n".join([f"- {doc.page_content}" for doc in docs])
-
-            # Tạo prompt với lịch sử chat và context trước đó
-            prompt = create_qa_prompt(
-                current_context,
-                question,
-                self.chat_history,
-                self.context_history
-            )
-
-            # Gọi Gemini API
-            answer = call_gemini_api(prompt, self.api_key)
-
-        # Lưu context hiện tại vào lịch sử context (chỉ lưu nếu có context)
-        if current_context:
-            self.context_history.append(current_context)
-
-            ## Giới hạn số lượng context (chỉ giữ lại 2 context gần nhất)
-            # if len(self.context_history) > self.max_contexts:
-            #     self.context_history.pop(0)  
-
-        # Lưu vào lịch sử chat
-        self.chat_history.append((question, answer))
-
-        # Giới hạn số lượng lịch sử chat
-        if len(self.chat_history) > self.max_history:
-            self.chat_history.pop(0)  
-
-        return answer
 
 # ========== TEST API CONNECTION ==========
 def test_gemini_connection(api_key):
