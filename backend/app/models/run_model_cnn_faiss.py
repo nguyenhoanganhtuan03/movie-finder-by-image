@@ -50,7 +50,7 @@ def l2_normalize(vectors):
 
 # ==== Hàm dự đoán ====
 # Hàm xử lý ảnh
-def predict_film_from_image(img_path, similarity_threshold):
+def predict_film_from_image(img_path, similarity_threshold, n_movies):
     img = cv2.imread(img_path)
     img = cv2.resize(img, (image_size, image_size))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -62,7 +62,7 @@ def predict_film_from_image(img_path, similarity_threshold):
     feature = l2_normalize(feature)
     feature = feature.astype(np.float32)
 
-    k = 5
+    k = n_movies
     D, I = index.search(feature, k)
 
     similarity_scores = 1 - D[0] / 2
@@ -89,7 +89,7 @@ def predict_film_from_image(img_path, similarity_threshold):
     return result_labels
 
 # Hàm xử lý video
-def predict_film_from_video(video_path, similarity_threshold):
+def predict_film_from_video(video_path, similarity_threshold, n_movies):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         return ["❌ Không mở được video."]
@@ -124,7 +124,7 @@ def predict_film_from_video(video_path, similarity_threshold):
         feature = l2_normalize(feature)
         feature = feature.astype(np.float32)
 
-        k = 5
+        k = n_movies * 2
         D, I = index.search(feature, k)
         similarity_scores = 1 - D[0] / 2
 
@@ -158,20 +158,20 @@ def predict_film_from_video(video_path, similarity_threshold):
         key=lambda item: (-item[1], unique_ordered_films.index(item[0]))
     )
 
-    result = [film for film, _ in sorted_films[:4]]
+    result = [film for film, _ in sorted_films[:n_movies]]
     return result
 
 
 # Hàm tự động nhận biết loại file và xử lý
-def predict_film_auto(input_path, similarity_threshold):
+def predict_film_auto(input_path, similarity_threshold, n_movies):
     try:
         start_time = time.time()
         ext = os.path.splitext(input_path)[-1].lower()
 
         if ext in ['.jpg', '.jpeg', '.png']:
-            film_name = predict_film_from_image(input_path, similarity_threshold)
+            film_name = predict_film_from_image(input_path, similarity_threshold, n_movies)
         elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
-            film_name = predict_film_from_video(input_path, similarity_threshold)
+            film_name = predict_film_from_video(input_path, similarity_threshold, n_movies)
         else:
             return "❌ Định dạng không hỗ trợ."
 

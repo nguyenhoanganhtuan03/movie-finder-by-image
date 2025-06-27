@@ -63,7 +63,7 @@
 
           <!-- Chọn số lượng phim hiển thị -->
           <div class="mb-3">
-            <label class="form-label">Số lượng tìm kiếm:</label>
+            <label class="form-label">Số lượng tìm kiếm tối đa:</label>
             <select v-model.number="resultLimit" class="form-select">
               <option v-for="n in 20" :key="'limit-' + n" :value="n">
                 {{ n }}
@@ -199,7 +199,7 @@ export default {
         this.clearVideo(); // Xóa video nếu có
         this.imageURL = URL.createObjectURL(file);
         
-        const result = await MovieService.searchByFile(file, this.similarityThreshold);
+        const result = await MovieService.searchByFile(file, this.similarityThreshold, this.resultLimit);
         this.searchResults = result.results || [];
         this.predictedName = result.predicted_name || "";
         console.log(result.results)
@@ -243,7 +243,7 @@ export default {
             this.clearImage(); // Xóa ảnh nếu có
             this.videoURL = URL.createObjectURL(file);
             
-            const result = await MovieService.searchByFile(file, this.similarityThreshold);
+            const result = await MovieService.searchByFile(file, this.similarityThreshold, this.resultLimit);
             this.searchResults = result.results || [];
             this.predictedName = result.predicted_name || "";
 

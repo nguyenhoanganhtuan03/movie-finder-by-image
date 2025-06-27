@@ -39,11 +39,12 @@ class MovieService {
     }
   }
 
-  async searchByFile(file, similarityThreshold) {
+  async searchByFile(file, similarityThreshold, n_movies) {
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("similarity_threshold", similarityThreshold);
+      formData.append("n_movies", n_movies);
   
       const response = await this.api.post("/search-by-file", formData, {
         headers: {
