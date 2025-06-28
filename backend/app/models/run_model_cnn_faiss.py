@@ -6,20 +6,20 @@ import cv2
 from collections import Counter, OrderedDict
 
 from tensorflow.keras.applications import ResNet50, VGG16
-# from tensorflow.keras.applications.resnet50 import preprocess_input
-from tensorflow.keras.applications.vgg16 import preprocess_input
+from tensorflow.keras.applications.resnet50 import preprocess_input
+# from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing import image
 
 # ==== Cấu hình ====
 image_size = 224
 base_dir = os.path.dirname(os.path.abspath(__file__))
-index_path = os.path.join(base_dir, "faiss_224/vgg16/faiss_features.index")
-label_path = os.path.join(base_dir, "faiss_224/vgg16/faiss_labels.npy")
+index_path = os.path.join(base_dir, "faiss_224/resnet50/faiss_features.index")
+label_path = os.path.join(base_dir, "faiss_224/resnet50/faiss_labels.npy")
 # similarity_threshold = 0.8
 
 # ==== Load model ResNet50 ====
-# model = ResNet50(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
-model = VGG16(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
+model = ResNet50(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
+# model = VGG16(include_top=False, weights='imagenet', pooling='avg', input_shape=(image_size, image_size, 3))
 
 # ==== Load FAISS index và labels ====
 if not os.path.exists(index_path) or not os.path.exists(label_path):
