@@ -124,7 +124,7 @@ def predict_film_from_video(video_path, similarity_threshold, n_movies):
         feature = l2_normalize(feature)
         feature = feature.astype(np.float32)
 
-        k = n_movies * 2
+        k = n_movies
         D, I = index.search(feature, k)
         similarity_scores = 1 - D[0] / 2
 
