@@ -55,15 +55,10 @@ def create_db():
             description = doc.get("describe", "").strip()
 
             # Prompt mô tả thông tin chung
-            info_prompt = (f"""
-                    Tên phim: {name}
-                    Thể loại: {genres}
-                    Thời lượng: {duration} phút
-                    Đạo diễn: {director}
-                    Diễn viên: {actors}
-                    Năm phát hành: {year}
-                    Tóm tắt: {description}
-                    """
+            info_prompt = (
+                f"{name} là một bộ phim thể loại {genres}, kéo dài {duration} phút, "
+                f"được đạo diễn bởi {director}, với sự tham gia của {actors}. "
+                f"Phim ra mắt năm {year}. Nội dung phim: {description}"
             ).strip()
             prompts.append(info_prompt)
 

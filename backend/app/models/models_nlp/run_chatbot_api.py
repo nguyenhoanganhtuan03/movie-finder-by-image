@@ -147,22 +147,6 @@ def load_vector_database():
     except Exception as e:
         raise Exception(f"Lỗi khi load vector database: {e}")
 
-# ========== TEST API CONNECTION ==========
-def test_gemini_connection(api_key):
-    """
-    Test kết nối với Gemini API
-    """
-    test_prompt = "Xin chào, bạn có thể trả lời câu hỏi này không?"
-    response = call_gemini_api(test_prompt, api_key)
-
-    if "❌" not in response:
-        print("✅ Kết nối Gemini API thành công!")
-        return True
-    else:
-        print(f"❌ Lỗi kết nối Gemini API: {response}")
-        return False
-
-
 # ========== MAIN PROGRAM ==========
 def main():
     print("🎬 HỆ THỐNG TRẢ LỜI CÂU HỎI VỀ PHIM ẢNH (Với Context Memory)")
@@ -172,11 +156,6 @@ def main():
     if not GEMINI_API_KEY:
         print("❌ Vui lòng đặt biến môi trường GEMINI_API_KEY.")
         print("Ví dụ: export GEMINI_API_KEY='your_api_key_here'")
-        return
-
-    # Test kết nối API
-    print("🔄 Đang kiểm tra kết nối Gemini API...")
-    if not test_gemini_connection(GEMINI_API_KEY):
         return
 
     # Load vector database

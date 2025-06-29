@@ -31,13 +31,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\backend\app\models\models_nlp\vector_db\prompt_mapping.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
       </map>
     </option>
   </component>
