@@ -46,7 +46,7 @@ def call_gemini_api_conversational(messages, api_key):
         "contents": messages,
         "generationConfig": {
             "temperature": 0.7,
-            "topK": 40,
+            "topK": 10,
             "topP": 0.95,
             "maxOutputTokens": 2048,
         }
@@ -77,7 +77,6 @@ def create_qa_prompt():
     prompt = f"""
                     "Bạn là một trợ lý AI chuyên trả lời câu hỏi về phim ảnh bằng tiếng Việt. "
                     "Sử dụng thông tin bên dưới để trả lời."
-                    "Hãy trích xuất thông tin như thể loại, đạo diễn, năm phát hành nếu có trong dữ liệu."
                     "Trả lời chính xác và ngắn gọn. Nếu không rõ, hãy nói 'Tôi không biết.'"
             """
 
@@ -96,7 +95,7 @@ class MovieQASystem:
             }
         ]
 
-    def search_relevant_docs(self, query, k=5):
+    def search_relevant_docs(self, query, k=20):
         try:
             return self.db.similarity_search(query, k=k)
         except Exception as e:
