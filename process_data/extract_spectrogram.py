@@ -7,9 +7,17 @@ import moviepy as mp
 import json
 from pathlib import Path
 import random
+import unicodedata
 
 def ensure_dir(path):
     os.makedirs(path, exist_ok=True)
+
+def safe_folder_name(name):
+    normalized = unicodedata.normalize('NFD', name)
+    no_accent = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+    no_d = no_accent.replace('Đ', 'D').replace('đ', 'd')
+    safe_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in no_d)
+    return safe_name
 
 def extract_wav_from_mp4(mp4_path, wav_path):
     clip = mp.VideoFileClip(mp4_path)
@@ -43,9 +51,10 @@ def process_video_folder(main_folder, output_base_folder, metadata_output_dir):
             print(f"No MP4 found in {movie_path}")
             continue
 
-        print(f"[INFO] Processing movie folder: {movie_dir}")
+        safe_movie_dir = safe_folder_name(movie_dir)
+        print(f"[INFO] Processing movie folder: {movie_dir} -> {safe_movie_dir}")
 
-        for mp4_file in mp4_files:
+        for video_idx, mp4_file in enumerate(mp4_files):
             video_name = Path(mp4_file).stem
             mp4_path = os.path.join(movie_path, mp4_file)
 
@@ -65,57 +74,64 @@ def process_video_folder(main_folder, output_base_folder, metadata_output_dir):
             n_segments = int(np.floor(total_duration / segment_len))
 
             used_segments = set()
-            for i in range(n_segments):
-                start = i * segment_len
+            for segment_idx in range(n_segments):
+                start = segment_idx * segment_len
                 end = start + segment_len
                 y_seg = y[int(start * sr): int(end * sr)]
 
-                save_dir = os.path.join(output_base_folder, 'Train', movie_dir)
+                save_dir = os.path.join(output_base_folder, 'Train', safe_movie_dir)
                 ensure_dir(save_dir)
-                spec_filename = f"{video_name}_{start:05d}_{end:05d}.png"
+                spec_filename = f"video_{video_idx:02d}_{segment_idx:04d}.jpg"
                 spec_path = os.path.join(save_dir, spec_filename)
                 generate_spectrogram(y_seg, sr, spec_path)
 
-                used_segments.add(i)
+                used_segments.add(segment_idx)
                 train_metadata.append({
                     "type": "train",
-                    "movie": movie_dir,
+                    "label": safe_movie_dir,
                     "video": video_name,
                     "start_sec": start,
                     "end_sec": end,
-                    "spectrogram_path": os.path.relpath(spec_path, start=output_base_folder)
+                    "filename": spec_filename
                 })
 
-            # === Sinh tập test từ các đoạn ngẫu nhiên (có thể trùng với đoạn Train)
+            # === Sinh tập test từ các đoạn ngẫu nhiên có độ dài 1–10s, padding nếu < 10s
             n_test = int(len(used_segments) * 0.3)
             test_start_times = set()
             max_attempts = 100 * n_test
             attempts = 0
 
             while len(test_start_times) < n_test and attempts < max_attempts:
-                rand_start = random.uniform(0, total_duration - segment_len)
-                rand_start_rounded = round(rand_start, 2)  # làm tròn 2 chữ số sau dấu phẩy để tránh trùng
+                rand_len = random.uniform(1.0, 10.0)
+                rand_start = random.uniform(0, total_duration - rand_len)
+                rand_start_rounded = round(rand_start, 2)
                 if rand_start_rounded not in test_start_times:
-                    test_start_times.add(rand_start_rounded)
+                    test_start_times.add((rand_start_rounded, rand_len))
                 attempts += 1
 
-            for start in test_start_times:
-                end = start + segment_len
+            for test_idx, (start, duration) in enumerate(test_start_times):
+                end = start + duration
                 y_seg = y[int(start * sr): int(end * sr)]
 
-                save_dir = os.path.join(output_base_folder, 'Test', movie_dir)
+                # Pad nếu < 10s
+                if duration < 10.0:
+                    pad_len = int((10.0 - duration) * sr)
+                    y_seg = np.pad(y_seg, (0, pad_len), mode='constant')
+
+                save_dir = os.path.join(output_base_folder, 'Test', safe_movie_dir)
                 ensure_dir(save_dir)
-                spec_filename = f"{video_name}_{int(start):05d}_{int(end):05d}.png"
+                spec_filename = f"video_{video_idx:02d}_{test_idx:04d}.jpg"
                 spec_path = os.path.join(save_dir, spec_filename)
                 generate_spectrogram(y_seg, sr, spec_path)
 
                 test_metadata.append({
                     "type": "test",
-                    "movie": movie_dir,
+                    "label": safe_movie_dir,
                     "video": video_name,
                     "start_sec": round(start, 2),
-                    "end_sec": round(end, 2),
-                    "spectrogram_path": os.path.relpath(spec_path, start=output_base_folder)
+                    "end_sec": round(start + 10.0, 2),
+                    "orig_duration": round(duration, 2),
+                    "filename": spec_filename
                 })
 
     # Ghi metadata ra file

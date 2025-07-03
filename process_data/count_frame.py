@@ -10,9 +10,9 @@ def count_images_per_folder(root_dir, image_extensions=None):
 
     for subdir, dirs, files in os.walk(root_dir):
 
-        folder_name = os.path.basename(subdir).lower()
-        if folder_name == 'khac':
-            continue
+        # folder_name = os.path.basename(subdir).lower()
+        # if folder_name == 'khac':
+        #     continue
 
         count = sum(1 for file in files if any(file.lower().endswith(ext) for ext in image_extensions))
         if count > 0:
