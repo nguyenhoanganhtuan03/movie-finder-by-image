@@ -3,7 +3,7 @@ import numpy as np
 
 def count_images_per_folder(root_dir, image_extensions=None):
     if image_extensions is None:
-        image_extensions = ['.jpg']
+        image_extensions = ['.jpg', '.png']
 
     folder_image_counts = {}  # Lưu số lượng ảnh theo thư mục
     total = 0
@@ -40,9 +40,9 @@ def count_images_per_folder(root_dir, image_extensions=None):
 # ======== SỬ DỤNG ========
 
 print("==== Thư mục Train ====")
-folder_train_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_1\\Train'
+folder_train_path = 'E:\\Data\\Movie_Dataset\\Spectrogram_Dataset\\Train'
 count_images_per_folder(folder_train_path)
 
 print("\n==== Thư mục Test ====")
-folder_test_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test'
+folder_test_path = 'E:\\Data\\Movie_Dataset\\Spectrogram_Dataset\\Test'
 count_images_per_folder(folder_test_path)
