@@ -95,27 +95,26 @@ def process_video_folder(main_folder, output_base_folder, metadata_output_dir):
                     "filename": spec_filename
                 })
 
-            # === Sinh tập test từ các đoạn ngẫu nhiên có độ dài 1–10s, padding nếu < 10s
-            n_test = int(len(used_segments) * 0.3)
+            # === Sinh tập test từ các đoạn ngẫu nhiên có độ dài đúng 10s, pad nếu đoạn cuối thiếu
+            n_test = int(len(used_segments) * 0.35)
             test_start_times = set()
             max_attempts = 100 * n_test
             attempts = 0
 
             while len(test_start_times) < n_test and attempts < max_attempts:
-                rand_len = random.uniform(1.0, 10.0)
-                rand_start = random.uniform(0, total_duration - rand_len)
+                rand_start = random.uniform(0, total_duration)
                 rand_start_rounded = round(rand_start, 2)
                 if rand_start_rounded not in test_start_times:
-                    test_start_times.add((rand_start_rounded, rand_len))
+                    test_start_times.add(rand_start_rounded)
                 attempts += 1
 
-            for test_idx, (start, duration) in enumerate(test_start_times):
-                end = start + duration
+            for test_idx, start in enumerate(test_start_times):
+                end = start + 10.0
                 y_seg = y[int(start * sr): int(end * sr)]
 
-                # Pad nếu < 10s
-                if duration < 10.0:
-                    pad_len = int((10.0 - duration) * sr)
+                # Pad nếu vượt giới hạn âm thanh (cuối file thiếu)
+                if len(y_seg) < int(10.0 * sr):
+                    pad_len = int(10.0 * sr) - len(y_seg)
                     y_seg = np.pad(y_seg, (0, pad_len), mode='constant')
 
                 save_dir = os.path.join(output_base_folder, 'Test', safe_movie_dir)
@@ -130,7 +129,7 @@ def process_video_folder(main_folder, output_base_folder, metadata_output_dir):
                     "video": video_name,
                     "start_sec": round(start, 2),
                     "end_sec": round(start + 10.0, 2),
-                    "orig_duration": round(duration, 2),
+                    "orig_duration": round(len(y_seg) / sr, 2),
                     "filename": spec_filename
                 })
 

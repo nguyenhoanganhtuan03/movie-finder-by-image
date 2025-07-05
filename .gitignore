@@ -6,3 +6,4 @@ backend/app/models/models_nlp/vector_db
 backend/app/models/models_nlp/.env
 backend/app/.env
 backend/app/models/faiss_224
+backend/app/models/models_audio/features_faiss
