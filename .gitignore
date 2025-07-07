@@ -1,5 +1,3 @@
-backend/app/models/features_faiss_more_data
-backend/app/models/features_faiss
 backend/app/models/img_test
 backend/app/uploads
 backend/app/models/models_nlp/vector_db

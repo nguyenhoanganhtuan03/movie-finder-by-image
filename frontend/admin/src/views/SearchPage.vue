@@ -3,7 +3,7 @@
     <AppHeader />
 
     <div class="container my-5">
-      <h2 class="mb-4">Tìm kiếm phim</h2>
+      <h2 class="mb-4 text-center">Tìm kiếm phim</h2>
 
       <!-- Chia 2 phần -->
       <div class="d-flex flex-wrap gap-4">
@@ -35,7 +35,7 @@
 
           <!-- Upload video -->
           <div class="mb-3">
-            <label class="form-label">Tải lên video (dưới 5 phút):</label>
+            <label class="form-label">Tải lên video (MP4):</label>
             <input 
               ref="videoInput"
               type="file" 
@@ -43,9 +43,21 @@
               @change="handleVideoUpload" 
               class="form-control" 
             />
-            <div v-if="isUploading" class="mt-2">
+          </div>
+
+          <!-- Upload âm thanh -->
+          <div class="mb-3">
+            <label class="form-label">Tải lên file âm thanh (MP3/WAV):</label>
+            <input 
+              ref="audioInput"
+              type="file" 
+              accept="audio/mpeg,audio/wav" 
+              @change="handleAudioUpload" 
+              class="form-control" 
+            />
+          </div>
+          <div v-if="isUploading" class="mt-2">
               <span class="text-info">Đang xử lý...</span>
-            </div>
           </div>
         </div>
 
@@ -71,6 +83,11 @@
             </select>
           </div>
         </div>
+      </div>
+
+      <!-- Lưu ý chung -->
+      <div class="alert alert-warning w-100 mt-3 text-center" role="alert">
+        ⚠️ File video và âm thanh hoạt động tốt nhất với thời lượng từ <strong>30 giây đến 10 phút</strong>.
       </div>
 
       <!-- Video preview nếu có -->
@@ -177,6 +194,63 @@ export default {
       }
     },
 
+    async handleAudioUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const allowedTypes = ['audio/mpeg', 'audio/wav'];
+      if (!allowedTypes.includes(file.type)) {
+        alert("Chỉ chấp nhận file âm thanh MP3 hoặc WAV!");
+        this.clearAudioInput();
+        return;
+      }
+
+      if (file.size > 50 * 1024 * 1024) {
+        alert("Kích thước file quá lớn! Vui lòng chọn file dưới 50MB.");
+        this.clearAudioInput();
+        return;
+      }
+
+      const audio = document.createElement("audio");
+      audio.preload = "metadata";
+
+      audio.onloadedmetadata = async () => {
+        const duration = audio.duration;
+
+        if (duration < 30 || duration > 600) {
+          alert("Thời lượng âm thanh phải từ 30 giây đến 10 phút!");
+          this.clearAudioInput();
+          return;
+        }
+
+        try {
+          this.isUploading = true;
+          this.clearImage();
+          this.clearVideo();
+
+          const result = await FinderService.searchByAudio(file, this.similarityThreshold, this.resultLimit);
+          this.searchResults = result.results || [];
+          this.predictedName = result.predicted_name || "";
+
+          if (this.searchResults.length === 0) {
+            alert("Không nhận diện được phim từ âm thanh này!");
+          }
+        } catch (error) {
+          console.error("Lỗi upload audio:", error);
+          alert("Có lỗi xảy ra khi xử lý âm thanh!");
+        } finally {
+          this.isUploading = false;
+        }
+      };
+
+      audio.onerror = () => {
+        alert("Không thể đọc được file âm thanh!");
+        this.clearAudioInput();
+      };
+
+      audio.src = URL.createObjectURL(file);
+    },
+
     async handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -238,22 +312,26 @@ export default {
       
       video.onloadedmetadata = async () => {
         try {
-          if (video.duration <= 300) { // 5 phút
-            this.isUploading = true;
-            this.clearImage(); // Xóa ảnh nếu có
-            this.videoURL = URL.createObjectURL(file);
-            
-            const result = await MovieService.searchByFile(file, this.similarityThreshold, this.resultLimit);
-            this.searchResults = result.results || [];
-            this.predictedName = result.predicted_name || "";
+          const duration = video.duration;
 
-            if (this.searchResults.length === 0) {
-              alert("Không nhận diện được phim từ video này!");
-            }
-          } else {
-            alert("Video phải dưới 5 phút!");
+          if (duration < 30 || duration > 600) {
+            alert("Video phải có thời lượng từ 30 giây đến 10 phút!");
             this.clearVideoInput();
+            return;
           }
+
+          this.isUploading = true;
+          this.clearImage(); // Xóa ảnh nếu có
+          this.videoURL = URL.createObjectURL(file);
+          
+          const result = await MovieService.searchByFile(file, this.similarityThreshold, this.resultLimit);
+          this.searchResults = result.results || [];
+          this.predictedName = result.predicted_name || "";
+
+          if (this.searchResults.length === 0) {
+            alert("Không nhận diện được phim từ video này!");
+          }
+
         } catch (error) {
           console.error("Lỗi upload video:", error);
           alert("Có lỗi xảy ra khi xử lý video!");
@@ -298,11 +376,18 @@ export default {
         this.$refs.videoInput.value = "";
       }
     },
+
+    clearAudioInput() {
+      if (this.$refs.audioInput) {
+        this.$refs.audioInput.value = "";
+      }
+    }
   },
 
   beforeUnmount() {
     this.clearImage();
     this.clearVideo();
+    this.clearAudioInput();
   },
 };
 </script>

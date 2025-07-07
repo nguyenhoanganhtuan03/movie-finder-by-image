@@ -146,6 +146,6 @@ def process_video_folder(main_folder, output_base_folder, metadata_output_dir):
 # === Đường dẫn đầu vào và đầu ra ===
 input_movies_folder = "E:\\Data\\Movie_Dataset\\Film_Dataset"
 output_spectrogram_folder = "E:\\Data\\Movie_Dataset\\Spectrogram_Dataset"  # cha chứa train/ và test/
-metadata_output_dir = output_spectrogram_folder  # lưu JSON vào đây
+metadata_output_dir = output_spectrogram_folder
 
 process_video_folder(input_movies_folder, output_spectrogram_folder, metadata_output_dir)
