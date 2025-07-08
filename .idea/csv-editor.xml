@@ -3,20 +3,6 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\backend\app\models\features_faiss_more_data\resnet50\evaluation_metrics_faiss.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\backend\app\models\features_faiss_more_data\vgg16\evaluation_metrics_faiss.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\backend\app\models\models_audio\features_faiss\efficientnetb0\evaluation_metrics_faiss.csv">
           <value>
             <Attribute>
