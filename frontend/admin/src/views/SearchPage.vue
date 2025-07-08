@@ -102,6 +102,15 @@
         <button @click="clearImage" class="btn btn-sm btn-secondary">Xóa ảnh</button>
       </div>
 
+      <!-- Âm thanh preview nếu có -->
+      <div v-if="audioURL" class="d-flex align-items-center justify-content-center mt-3 gap-3 flex-wrap">
+        <div class="d-flex flex-column align-items-center">
+          <audio :src="audioURL" controls style="max-width: 100%;"></audio>
+          <small class="text-muted mt-1">{{ audioName }}</small>
+        </div>
+        <button @click="clearAudio" class="btn btn-sm btn-secondary">Xóa âm thanh</button>
+      </div>
+
       <!-- Hiển thị tên phim được dự đoán -->
       <div v-if="predictedName" class="alert alert-info mt-3">
         <strong>Phim được tìm thấy:</strong> {{ predictedName }}
@@ -161,6 +170,7 @@ export default {
       searchText: "",
       videoURL: "",
       imageURL: "",
+      audioURL: "",
       searchResults: [],
       predictedName: "",
       isUploading: false,
@@ -204,6 +214,9 @@ export default {
         this.clearAudioInput();
         return;
       }
+
+      this.audioURL = URL.createObjectURL(file);
+      this.audioName = file.name;
 
       if (file.size > 50 * 1024 * 1024) {
         alert("Kích thước file quá lớn! Vui lòng chọn file dưới 50MB.");
@@ -365,6 +378,15 @@ export default {
       this.clearVideoInput();
     },
 
+    clearAudio() {
+      if (this.audioURL) {
+        URL.revokeObjectURL(this.audioURL);
+      }
+      this.audioURL = "";
+      this.audioName = "";
+      this.clearAudioInput();
+    },
+
     clearImageInput() {
       if (this.$refs.imageInput) {
         this.$refs.imageInput.value = "";
@@ -388,6 +410,7 @@ export default {
     this.clearImage();
     this.clearVideo();
     this.clearAudioInput();
+    this.clearAudio();
   },
 };
 </script>
