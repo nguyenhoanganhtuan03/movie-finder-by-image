@@ -65,12 +65,14 @@ def call_gemini_api_with_history(message_history, api_key):
     except Exception as e:
         return f"❌ Lỗi khi gọi Gemini: {str(e)}"
 
-# ==== PROMPT BAN ĐẦU ====
+
+# ==== PROMPT KHỞI TẠO ====
 def create_qa_prompt():
     return (
         "Bạn là một chuyên gia điện ảnh. Trả lời câu hỏi của người dùng về các bộ phim, "
         "diễn viên, đạo diễn, thể loại hoặc năm phát hành một cách chính xác và dễ hiểu."
     )
+
 
 # ==== HỆ THỐNG QA ====
 class MovieQASystem:
@@ -78,9 +80,13 @@ class MovieQASystem:
         self.db = vector_db or load_vector_database()
         self.api_key = api_key or GEMINI_API_KEY
         self.max_history = max_history
+
         self.message_history = [
             {"role": "user", "parts": [{"text": create_qa_prompt()}]}
         ]
+
+        self.initialized = False
+        self.last_used_docs = []  # ✅ Dùng để lưu doc cũ từ lượt trước
 
     def search_relevant_docs(self, query, k=10):
         try:
@@ -91,18 +97,38 @@ class MovieQASystem:
 
     def update_history(self, role, text):
         self.message_history.append({"role": role, "parts": [{"text": text}]})
-        if len(self.message_history) > self.max_history:
+        if len(self.message_history) > self.max_history + 1:
             self.message_history = [self.message_history[0]] + self.message_history[-self.max_history:]
 
-    def answer_question(self, question):
-        docs = self.search_relevant_docs(question)
-        context = "\n".join(f"- {doc.page_content}" for doc in docs) if docs else ""
-        if context:
-            question = f"THÔNG TIN THAM KHẢO:\n{context}\n\nCÂU HỎI: {question}"
+    def build_prompt(self, question, docs):
+        if docs:
+            context = "\n".join(f"- {doc.page_content}" for doc in docs)
+            return f"THÔNG TIN THAM KHẢO:\n{context}\n\nCÂU HỎI: {question}"
+        else:
+            return question
 
-        self.update_history("user", question)
+    def answer_question(self, question):
+        # 🔍 Trích doc mới nếu có thể
+        docs = self.search_relevant_docs(question)
+
+        if docs:
+            self.last_used_docs = docs
+        else:
+            docs = self.last_used_docs
+
+        prompt = self.build_prompt(question, docs)
+
+        # Chỉ gửi prompt khởi tạo 1 lần
+        if not self.initialized:
+            self.initialized = True
+        else:
+            self.message_history = self.message_history[1:]
+
+        self.update_history("user", prompt)
+
         response = call_gemini_api_with_history(self.message_history, self.api_key)
         self.update_history("model", response)
+
         return response
 
 # ========== ĐỌC VECTORSTORE FAISS ==========
@@ -157,5 +183,5 @@ def main():
             print(f"❌ Lỗi: {e}")
             continue
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
