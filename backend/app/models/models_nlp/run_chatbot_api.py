@@ -36,6 +36,7 @@ class SentenceTransformerEmbeddingWrapper(Embeddings):
 
 embedding_wrapper = SentenceTransformerEmbeddingWrapper(model)
 
+
 # ==== HÀM GỌI GEMINI API (có duy trì lịch sử) ====
 def call_gemini_api_with_history(message_history, api_key):
     headers = {"Content-Type": "application/json"}
@@ -70,23 +71,28 @@ def call_gemini_api_with_history(message_history, api_key):
 def create_qa_prompt():
     return (
         "Bạn là một chuyên gia điện ảnh. Trả lời câu hỏi của người dùng về các bộ phim, "
-        "diễn viên, đạo diễn, thể loại hoặc năm phát hành một cách chính xác và dễ hiểu."
+        "diễn viên, đạo diễn, thể loại hoặc năm phát hành một cách chính xác và dễ hiểu. "
+        "Hãy duy trì ngữ cảnh của cuộc trò chuyện và tham khảo các câu hỏi trước đó khi cần thiết. "
+        "Nếu người dùng hỏi về 'phim này', 'bộ phim đó', 'phim vừa nói', hãy hiểu họ đang nhắc đến phim được đề cập gần nhất."
     )
 
 
 # ==== HỆ THỐNG QA ====
 class MovieQASystem:
-    def __init__(self, vector_db=None, api_key=None, max_history=10):
+    def __init__(self, vector_db=None, api_key=None, max_history=20):
         self.db = vector_db or load_vector_database()
         self.api_key = api_key or GEMINI_API_KEY
         self.max_history = max_history
 
+        # Khởi tạo lịch sử với system prompt
         self.message_history = [
-            {"role": "user", "parts": [{"text": create_qa_prompt()}]}
+            {"role": "user", "parts": [{"text": create_qa_prompt()}]},
+            {"role": "model", "parts": [{
+                                            "text": "Chào bạn! Tôi là chuyên gia điện ảnh. Tôi sẽ trả lời các câu hỏi về phim và duy trì ngữ cảnh cuộc trò chuyện. Hãy hỏi tôi bất kỳ điều gì về phim nhé!"}]}
         ]
 
-        self.initialized = False
-        self.last_used_docs = []  # ✅ Dùng để lưu doc cũ từ lượt trước
+        self.last_used_docs = []
+        self.current_movie_context = None  # Lưu phim đang được thảo luận
 
     def search_relevant_docs(self, query, k=10):
         try:
@@ -96,40 +102,110 @@ class MovieQASystem:
             return []
 
     def update_history(self, role, text):
+        """Cập nhật lịch sử trò chuyện"""
         self.message_history.append({"role": role, "parts": [{"text": text}]})
-        if len(self.message_history) > self.max_history + 1:
-            self.message_history = [self.message_history[0]] + self.message_history[-self.max_history:]
 
-    def build_prompt(self, question, docs):
+        # Giữ lại system prompt và giới hạn lịch sử
+        if len(self.message_history) > self.max_history + 2:  # +2 cho system prompt và response
+            # Giữ lại system prompt (2 message đầu) và các message gần nhất
+            system_messages = self.message_history[:2]
+            recent_messages = self.message_history[-(self.max_history):]
+            self.message_history = system_messages + recent_messages
+
+    def extract_movie_from_response(self, response):
+        """Trích xuất tên phim từ câu trả lời để lưu context"""
+        # Tìm kiếm pattern phim trong câu trả lời
+        import re
+        movie_patterns = [
+            r'[Pp]him\s+["\*]?([^"\*\n]+)["\*]?',
+            r'[Bb]ộ phim\s+["\*]?([^"\*\n]+)["\*]?',
+            r'[Tt]ác phẩm\s+["\*]?([^"\*\n]+)["\*]?'
+        ]
+
+        for pattern in movie_patterns:
+            matches = re.findall(pattern, response)
+            if matches:
+                return matches[0].strip()
+        return None
+
+    def build_context_aware_prompt(self, question, docs):
+        """Tạo prompt có nhận thức về ngữ cảnh"""
+        context_parts = []
+
+        # Thêm thông tin từ vector database
         if docs:
-            context = "\n".join(f"- {doc.page_content}" for doc in docs)
-            return f"THÔNG TIN THAM KHẢO:\n{context}\n\nCÂU HỎI: {question}"
+            doc_context = "\n".join(f"- {doc.page_content}" for doc in docs)
+            context_parts.append(f"THÔNG TIN THAM KHẢO:\n{doc_context}")
+
+        # Thêm ngữ cảnh phim hiện tại nếu có
+        if self.current_movie_context:
+            context_parts.append(f"PHIM ĐANG THẢO LUẬN: {self.current_movie_context}")
+
+        # Thêm lời nhắc về ngữ cảnh
+        context_parts.append(
+            "LƯU Ý: Hãy tham khảo các câu hỏi và câu trả lời trước đó trong cuộc trò chuyện để hiểu đúng ngữ cảnh.")
+
+        if context_parts:
+            full_context = "\n\n".join(context_parts)
+            return f"{full_context}\n\nCÂU HỎI: {question}"
         else:
-            return question
+            return f"CÂU HỎI: {question}"
+
+    def is_context_dependent_question(self, question):
+        """Kiểm tra xem câu hỏi có phụ thuộc vào ngữ cảnh không"""
+        context_indicators = [
+            'phim này', 'phim đó', 'phim vừa nói', 'bộ phim này', 'bộ phim đó',
+            'phim trên', 'phim nói ở trên', 'có những ai', 'diễn viên nào',
+            'khi nào', 'năm nào', 'thể loại gì', 'đạo diễn nào'
+        ]
+
+        question_lower = question.lower()
+        return any(indicator in question_lower for indicator in context_indicators)
 
     def answer_question(self, question):
-        # 🔍 Trích doc mới nếu có thể
+        """Trả lời câu hỏi với duy trì ngữ cảnh"""
+        # Tìm kiếm documents liên quan
         docs = self.search_relevant_docs(question)
 
-        if docs:
-            self.last_used_docs = docs
-        else:
+        # Nếu không tìm thấy doc mới và câu hỏi phụ thuộc ngữ cảnh, dùng doc cũ
+        if not docs and self.is_context_dependent_question(question):
             docs = self.last_used_docs
 
-        prompt = self.build_prompt(question, docs)
+        # Cập nhật doc được sử dụng
+        if docs:
+            self.last_used_docs = docs
 
-        # Chỉ gửi prompt khởi tạo 1 lần
-        if not self.initialized:
-            self.initialized = True
-        else:
-            self.message_history = self.message_history[1:]
+        # Tạo prompt có nhận thức ngữ cảnh
+        prompt = self.build_context_aware_prompt(question, docs)
 
+        # Thêm câu hỏi vào lịch sử
         self.update_history("user", prompt)
 
+        # Gọi API
         response = call_gemini_api_with_history(self.message_history, self.api_key)
+
+        # Cập nhật ngữ cảnh phim hiện tại
+        movie_mentioned = self.extract_movie_from_response(response)
+        if movie_mentioned:
+            self.current_movie_context = movie_mentioned
+
+        # Thêm câu trả lời vào lịch sử
         self.update_history("model", response)
 
         return response
+
+    def get_conversation_history(self):
+        """Lấy lịch sử trò chuyện cho debug"""
+        return self.message_history[2:]  # Bỏ qua system prompt
+
+    def clear_history(self):
+        """Xóa lịch sử trò chuyện"""
+        self.message_history = [
+            {"role": "user", "parts": [{"text": create_qa_prompt()}]},
+            {"role": "model", "parts": [{"text": "Chào bạn! Tôi là chuyên gia điện ảnh. Tôi sẽ trả lời các câu hỏi về phim và duy trì ngữ cảnh cuộc trò chuyện. Hãy hỏi tôi bất kỳ điều gì về phim nhé!"}]}
+        ]
+        self.current_movie_context = None
+        self.last_used_docs = []
 
 # ========== ĐỌC VECTORSTORE FAISS ==========
 def load_vector_database():
