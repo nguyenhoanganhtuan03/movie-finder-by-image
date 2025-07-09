@@ -2,7 +2,7 @@ import os
 import requests
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
-
+import re
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings.base import Embeddings
 
@@ -113,7 +113,6 @@ class MovieQASystem:
     def extract_movie_from_response(self, response):
         """Trích xuất tên phim từ câu trả lời để lưu context"""
         # Tìm kiếm pattern phim trong câu trả lời
-        import re
         movie_patterns = [
             r'[Pp]him\s+["\*]?([^"\*\n]+)["\*]?',
             r'[Bb]ộ phim\s+["\*]?([^"\*\n]+)["\*]?',
