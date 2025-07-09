@@ -173,7 +173,7 @@ export default {
           chatStarted.value = true;
         } else {
           // ✅ Đã có session, tiếp tục gửi tin nhắn
-          res = await chatbotService.updateHistory(chatId.value, text);
+          res = await chatbotService.updateHistory(chatId.value, text, userId);
           chatStarted.value = true;
         }
 

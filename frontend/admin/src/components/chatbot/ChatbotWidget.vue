@@ -173,7 +173,7 @@ export default {
           chatStarted.value = true;
         } else {
           // ✅ Đã có session, tiếp tục gửi tin nhắn
-          res = await chatbotService.updateHistory(chatId.value, text);
+          res = await chatbotService.updateHistory(chatId.value, text, userId);
           chatStarted.value = true;
         }
 
@@ -222,7 +222,13 @@ export default {
 
     onMounted(async () => {
       if (chatId.value) {
+        // ✅ Nếu đã có cuộc trò chuyện thì load lịch sử
         await loadChatHistory(chatId.value);
+      } else {
+        // ✅ Nếu chưa có, tự gửi câu mở đầu
+        const defaultMessage = "Xin chào, tôi cần hỗ trợ về phim Việt Nam !";
+        userInput.value = defaultMessage;
+        await sendMessage(); // Gửi ngay
       }
     });
 

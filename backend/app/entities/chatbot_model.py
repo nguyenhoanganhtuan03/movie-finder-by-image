@@ -15,3 +15,4 @@ class ChatRequest(BaseModel):
 class UpdateChatRequest(BaseModel):
     hischat_id: str
     user_message: str
+    user_id: str

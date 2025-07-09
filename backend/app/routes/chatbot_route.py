@@ -30,7 +30,7 @@ async def get_hischat_by_id(hischat_id: str = Path(...)):
 @router.put("/")
 async def update_hischat(request: UpdateChatRequest):
     # Cập nhật lịch sử chat
-    updated_doc = await update_his_chat(request.hischat_id, request.user_message)
+    updated_doc = await update_his_chat(request.hischat_id, request.user_message, request.user_id)
     
     return {"updated_history": updated_doc}
 

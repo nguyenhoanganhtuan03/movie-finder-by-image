@@ -24,10 +24,11 @@ class ChatbotService {
     return data;
   }
 
-  async updateHistory(hischatId, userMessage) {
+  async updateHistory(hischatId, userMessage, userId) {
     const { data } = await this.api.put("/", {
       hischat_id: hischatId,
-      user_message: userMessage
+      user_message: userMessage,
+      user_id: userId
     });
     return data;
   }

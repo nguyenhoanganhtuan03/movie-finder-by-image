@@ -5,9 +5,8 @@ from typing import List
 from datetime import datetime
 
 from app.database import db
-from app.models.models_nlp.run_chatbot_api import MovieQASystem
+from app.models.models_nlp.run_chatbot_api import MovieQASystem, process_user_question, load_vector_database
 from app.entities.chatbot_model import HistoryChatbotModel
-
 
 # Tạo ID tăng tự động 
 async def get_next_id(): 
@@ -37,10 +36,19 @@ async def create_his_chat(data: HistoryChatbotModel):
 
 
 # Hàm xử lý ChatBot
+qa_systems = {}
 async def chatbot(user_id: str, content: str):
-    qa_system = MovieQASystem()
     question = content.strip()
+
+    # Nếu user chưa có phiên hội thoại, tạo mới
+    if user_id not in qa_systems:
+        vectordb = load_vector_database()
+        qa_systems[user_id] = MovieQASystem(vectordb)
+
+    qa_system = qa_systems[user_id]
     answer = qa_system.answer_question(question)
+
+    # Lưu lịch sử vào DB
     history_data = HistoryChatbotModel(
         user_id=user_id,
         content=[  
@@ -50,7 +58,6 @@ async def chatbot(user_id: str, content: str):
             }
         ]
     )
-
     saved_record = await create_his_chat(history_data)
     return {
         "answer": answer,
@@ -77,9 +84,15 @@ async def get_his_chat_by_id(hischat_id: str):
 
 
 # Hàm cập nhật hischat
-async def update_his_chat(hischat_id: str, user_message: str):
-    qa_system = MovieQASystem()
+async def update_his_chat(hischat_id: str, user_message: str, user_id: str):
+    # Dùng lại phiên của user
+    if user_id not in qa_systems:
+        vectordb = load_vector_database()
+        qa_systems[user_id] = MovieQASystem(vectordb)
+
+    qa_system = qa_systems[user_id]
     bot_answer = qa_system.answer_question(user_message)
+
     update_doc = {
         "$push": {
             "content": {
@@ -88,7 +101,7 @@ async def update_his_chat(hischat_id: str, user_message: str):
             }
         },
         "$set": {
-            "date_chat": datetime.utcnow().isoformat() 
+            "date_chat": datetime.utcnow().isoformat()
         }
     }
     result = await db['history_chatbot'].find_one_and_update(

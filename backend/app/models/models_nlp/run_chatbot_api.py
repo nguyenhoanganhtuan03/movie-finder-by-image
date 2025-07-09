@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 
 from langchain_community.vectorstores import FAISS
 from langchain.embeddings.base import Embeddings
-from langchain.prompts import PromptTemplate
-from langchain.schema import HumanMessage, AIMessage
 
 
 # ==== CẤU HÌNH ====
@@ -14,8 +12,8 @@ load_dotenv()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 MOVIE_VECTOR_DB = os.path.join(base_dir, "vector_db/movie_vector_db")
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY_3")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 # ==== LOAD MODEL EMBEDDING ====
 model = SentenceTransformer(EMBEDDING_MODEL)
@@ -79,7 +77,7 @@ def create_qa_prompt():
 
 # ==== HỆ THỐNG QA ====
 class MovieQASystem:
-    def __init__(self, vector_db=None, api_key=None, max_history=20):
+    def __init__(self, vector_db=None, api_key=None, max_history=10):
         self.db = vector_db or load_vector_database()
         self.api_key = api_key or GEMINI_API_KEY
         self.max_history = max_history
@@ -222,20 +220,35 @@ def load_vector_database():
         raise Exception(f"Lỗi khi load vector database: {e}")
 
 # ========== MAIN PROGRAM ==========
+qa_system = None
+
+def initialize_qa_system():
+    global qa_system
+    if qa_system is None:
+        db = load_vector_database()
+        qa_system = MovieQASystem(db, GEMINI_API_KEY)
+    return qa_system
+
+def process_user_question(question: str) -> str:
+    qa = initialize_qa_system()
+    return qa.answer_question(question.strip())
+
 def main():
-    print("\U0001f3ac HỆ THỐNG TRẢ LỜI CÂU HỎI VỀ PHIM ẢNH (Với Context Memory)")
+    print("🎬 HỆ THỐNG TRẢ LỜI CÂU HỎI VỀ PHIM ẢNH (Với Context Memory)")
     print("=" * 60)
+    
     if not GEMINI_API_KEY:
         print("❌ Vui lòng đặt biến môi trường GEMINI_API_KEY.")
         return
+
     print("🔄 Đang load vector database...")
     try:
-        db = load_vector_database()
+        initialize_qa_system()
         print("✅ Load vector database thành công!")
     except Exception as e:
         print(f"❌ {e}")
         return
-    qa_system = MovieQASystem(db, GEMINI_API_KEY)
+
     print("\n🤖 Hệ thống đã sẵn sàng! Hãy đặt câu hỏi về phim ảnh.")
     print("   - 'quit' hoặc 'exit': Thoát chương trình")
     while True:
@@ -248,9 +261,8 @@ def main():
                 print("⚠️ Vui lòng nhập câu hỏi.")
                 continue
             print("🔄 Đang tìm kiếm và tạo câu trả lời...")
-            answer = qa_system.answer_question(question)
-            print(f"\n🤖 Trả lời:")
-            print(f"{answer}")
+            answer = process_user_question(question)
+            print(f"\n🤖 Trả lời:\n{answer}")
             print("-" * 50)
         except KeyboardInterrupt:
             print("\n👋 Đã dừng chương trình.")
@@ -259,5 +271,5 @@ def main():
             print(f"❌ Lỗi: {e}")
             continue
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
