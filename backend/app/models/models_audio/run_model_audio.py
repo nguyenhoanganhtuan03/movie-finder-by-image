@@ -117,28 +117,39 @@ def predict_from_feature_batch(features, index, index_labels, n_movies, similari
     D, I = index.search(features, n_movies)  
 
     all_predictions = []
+    priority_predictions = []  # chứa phim có dist == 0.99
 
     for distances, indices in zip(D, I):  
         for dist, idx in zip(distances, indices): 
             sim = 1 - dist / 2
-            if sim < similarity_threshold:
-                pred_label = 46
-            else:
-                pred_data = index_labels[idx]
-                if isinstance(pred_data, (np.ndarray, list)) and len(pred_data) > 1:
-                    pred_label = int(np.argmax(pred_data)) + 1
-                else:
-                    pred_label = int(pred_data)
 
-            film_name = CLASSES.get(pred_label, "Không xác định")
-            all_predictions.append(film_name)
+            pred_data = index_labels[idx]
+            if isinstance(pred_data, (np.ndarray, list)) and len(pred_data) > 1:
+                pred_label = int(np.argmax(pred_data)) + 1
+            else:
+                pred_label = int(pred_data)
+
+            film_name = CLASSES.get(pred_label, "Khác")
+
+            # Nếu dist == 0.99 thì thêm vào danh sách ưu tiên
+            if dist > 0.98:
+                priority_predictions.append(film_name)
+
+            # Các trường hợp còn lại xử lý như bình thường
+            elif sim >= similarity_threshold:
+                all_predictions.append(film_name)
+            else:
+                all_predictions.append(CLASSES.get(46, "Khác"))
 
     counts = Counter(all_predictions)
 
-    # Trả về top-n_movies phim xuất hiện nhiều nhất, nếu số lượng bằng nhau thì ưu tiên theo thứ tự ban đầu
+    # Lấy top-n_movies phim thường xuyên nhất (bỏ qua priority đã có)
     sorted_films = sorted(counts.items(), key=lambda item: (-item[1], all_predictions.index(item[0])))
-    result = [film for film, _ in sorted_films[:n_movies]]
-    return result
+    normal_results = [film for film, _ in sorted_films if film not in priority_predictions]
+
+    # Kết quả cuối: Ưu tiên phim có dist = 0.99, sau đó đến phim thường
+    result = priority_predictions + normal_results
+    return result[:n_movies]
 
 # ==== Hàm chính ====
 def predict_film_from_audio(audio_path, similarity_threshold, n_movies):
