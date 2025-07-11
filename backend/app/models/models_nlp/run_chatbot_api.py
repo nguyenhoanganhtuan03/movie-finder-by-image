@@ -13,7 +13,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 MOVIE_VECTOR_DB = os.path.join(base_dir, "vector_db/movie_vector_db")
 EMBEDDING_MODEL = "AITeamVN/Vietnamese_Embedding"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 # ==== LOAD MODEL EMBEDDING ====
 model = SentenceTransformer(EMBEDDING_MODEL)
