@@ -80,7 +80,7 @@ def generate_spectrogram(y, sr):
     return img_array
 
 # ==== Cắt audio thành 10 đoạn 10s cách nhau 1s, từ giữa file ====
-def split_audio_segments(wav_path, segment_duration=10.0, num_segments=10, hop_seconds=2.0):
+def split_audio_segments(wav_path, segment_duration=10.0, num_segments=10, hop_seconds=1.0):
     y, sr = librosa.load(wav_path, sr=22050)
     total_samples = len(y)
     segment_samples = int(segment_duration * sr)
