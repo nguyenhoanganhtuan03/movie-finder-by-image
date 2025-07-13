@@ -2,7 +2,7 @@ import os
 import time
 import numpy as np
 import cv2
-from collections import Counter
+from collections import Counter, OrderedDict
 
 from skimage.feature import hog
 from skimage import color
@@ -15,7 +15,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 index_path = os.path.join(base_dir, "faiss_224/hog/faiss_features.index")
 label_path = os.path.join(base_dir, "faiss_224/hog/faiss_labels.npy")
 
-# ==== Load FAISS index, labels, và KMeans ONNX model ====
+# ==== Load FAISS index, labels ====
 if not os.path.exists(index_path):
     print(f"❌ Không tìm thấy FAISS index tại: {index_path}")
     exit()
@@ -26,7 +26,6 @@ if not os.path.exists(label_path):
 try:
     index = faiss.read_index(index_path)
     index_labels = np.load(label_path)
-
 except Exception as e:
     print(f"❌ Lỗi khi tải models: {e}")
     exit()
@@ -45,18 +44,29 @@ classes = {
     46: "Khác"
 }
 
-# Trích đặc trưng với HOG
-def extract_hog_features(gray, img_path=None):
-    """Trích xuất vector HOG từ ảnh xám"""
+# Chuẩn hóa L2 cho mỗi vector (độ dài = 1)
+def l2_normalize(vectors):
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    return vectors / (norms + 1e-10)  # epsilon tránh chia cho 0
+
+# ==== Hàm trích xuất đặc trưng HOG ====
+def extract_hog_features(img_path):
+    """Trích xuất vector HOG trực tiếp từ ảnh"""
     try:
-        hog_vector = hog(            
-            gray,
-            orientations=9,                
-            pixels_per_cell=(24, 24),       
-            cells_per_block=(3, 3),
-            block_norm='L2-Hys',
-            feature_vector=True
-        )
+        img = cv2.imread(img_path)
+        if img is None:
+            return None
+
+        img = cv2.resize(img, (image_size, image_size))
+        gray = color.rgb2gray(img)
+
+        # Trích xuất đặc trưng HOG (vector 1 chiều)
+        hog_vector = hog(gray,
+                        orientations=9,                
+                        pixels_per_cell=(24, 24),       
+                        cells_per_block=(3, 3),
+                        block_norm='L2-Hys',
+                        feature_vector=True)
 
         if hog_vector is None or len(hog_vector) == 0:
             return None
@@ -64,51 +74,58 @@ def extract_hog_features(gray, img_path=None):
         return hog_vector.astype(np.float32)
 
     except Exception as e:
-        if img_path:
-            print(f"Lỗi trích xuất HOG từ {img_path}: {e}")
-        else:
-            print(f"Lỗi trích xuất HOG: {e}")
+        print(f"Lỗi trích xuất HOG từ {img_path}: {e}")
         return None
 
 # ==== Hàm dự đoán từ ảnh ====
-def predict_film_from_image(img_path):
+def predict_film_from_image(img_path, similarity_threshold, n_movies):
     img = cv2.imread(img_path)
-    img = cv2.resize(img, (image_size, image_size))
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    feature = extract_hog_features(gray, img_path)
-    
-    if feature is None:
-        return "❌ Không trích xuất được đặc trưng từ ảnh."
+    if img is None:
+        return ["❌ Không đọc được ảnh."]
 
+    feature = extract_hog_features(img_path)
+    if feature is None:
+        return ["❌ Không trích xuất được đặc trưng."]
+
+    # Chuẩn hóa L2
     feature = feature / (np.linalg.norm(feature) + 1e-10)
     feature = feature.reshape(1, -1).astype(np.float32)
+    D, I = index.search(feature, n_movies)
+    similarity_scores = 1 - D[0] / 2
 
-    D, I = index.search(feature, 1)
+    result_labels = []
+    seen_labels = set()
 
-    euclidean_dist_squared = D[0][0]
-    similarity_score = 1 - euclidean_dist_squared / 2
+    for idx, sim in zip(I[0], similarity_scores):
+        if sim < similarity_threshold:
+            pred_label = 46
+        else:
+            pred_label_data = index_labels[idx]
+            if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
+                pred_label = int(np.argmax(pred_label_data)) + 1
+            else:
+                pred_label = int(pred_label_data)
 
-    if similarity_score < similarity_threshold:
-        pred_label = 46
-    else:
-        pred_label_data = index_labels[I[0][0]]
-        pred_label = int(np.argmax(pred_label_data)) + 1 if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1 else int(pred_label_data) + 1
+        film_name = classes.get(pred_label, "Không xác định")
+        if film_name not in seen_labels:
+            result_labels.append(film_name)
+            seen_labels.add(film_name)
 
-    return classes.get(pred_label, "Không xác định")
-
+    return result_labels
 
 # ==== Hàm dự đoán từ video ====
-def predict_film_from_video(video_path):
+def predict_film_from_video(video_path, similarity_threshold, n_movies):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        return "❌ Không mở được video."
+        return ["❌ Không mở được video."]
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if total_frames == 0:
-        return "❌ Video không có frame nào."
+        return ["❌ Video không có frame."]
 
-    frame_indices = [0, total_frames // 2, total_frames - 1]
-    predictions = []
+    frame_indices = [0, total_frames // 4, total_frames // 2, (3 * total_frames) // 4, total_frames - 1]
+    film_occurrences = []
+    film_counts = Counter()
 
     for idx in frame_indices:
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
@@ -116,62 +133,65 @@ def predict_film_from_video(video_path):
         if not ret:
             continue
 
-        resized = cv2.resize(frame, (image_size, image_size))
-        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-        gray = gray / 255.0  
-
-        feature = extract_hog_features(gray)
-
+        feature = extract_hog_features(video_path)
         if feature is None:
             continue
 
-        feature = feature / (np.linalg.norm(feature) + 1e-10)
-        feature = feature.reshape(1, -1).astype(np.float32)
+        feature = feature.reshape(1, -1)
+        D, I = index.search(feature, n_movies)
+        similarity_scores = 1 - D[0] / 2
 
-        D, I = index.search(feature, 1)
+        seen_in_frame = set()
+        for idx_db, sim in zip(I[0], similarity_scores):
+            if sim < similarity_threshold:
+                pred_label = 46
+            else:
+                pred_label_data = index_labels[idx_db]
+                if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1:
+                    pred_label = int(np.argmax(pred_label_data)) + 1
+                else:
+                    pred_label = int(pred_label_data)
 
-        euclidean_dist_squared = D[0][0]
-        similarity_score = 1 - euclidean_dist_squared / 2
-
-        if similarity_score < similarity_threshold:
-            pred_label = 46
-        else:
-            pred_label_data = index_labels[I[0][0]]
-            pred_label = int(np.argmax(pred_label_data)) + 1 if isinstance(pred_label_data, (np.ndarray, list)) and len(pred_label_data) > 1 else int(pred_label_data) + 1
-        predictions.append(pred_label)
+            film_name = classes.get(pred_label, "Không xác định")
+            if film_name not in seen_in_frame:
+                seen_in_frame.add(film_name)
+                film_counts[film_name] += 1
+                film_occurrences.append(film_name)
 
     cap.release()
 
-    if not predictions:
-        return "❌ Không đọc được frame hợp lệ nào."
+    if not film_counts:
+        return ["❌ Không đọc được frame hợp lệ nào."]
 
-    most_common_id = Counter(predictions).most_common(1)[0][0]
-    return classes.get(most_common_id, "Không xác định")
+    unique_ordered_films = list(OrderedDict.fromkeys(film_occurrences))
+    sorted_films = sorted(
+        film_counts.items(),
+        key=lambda item: (-item[1], unique_ordered_films.index(item[0]))
+    )
+    return [film for film, _ in sorted_films[:n_movies]]
 
-# ==== Hàm tự động xử lý ảnh hoặc video ====
-def predict_film_auto(input_path):
+# ==== Hàm tự nhận dạng ảnh hoặc video ====
+def predict_film_auto(input_path, similarity_threshold, n_movies):
     try:
         start_time = time.time()
         ext = os.path.splitext(input_path)[-1].lower()
 
         if ext in ['.jpg', '.jpeg', '.png']:
-            film_name = predict_film_from_image(input_path)
+            result = predict_film_from_image(input_path, similarity_threshold, n_movies)
         elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
-            film_name = predict_film_from_video(input_path)
+            result = predict_film_from_video(input_path, similarity_threshold, n_movies)
         else:
-            return "❌ Định dạng không hỗ trợ."
+            return ["❌ Định dạng không hỗ trợ."]
 
         end_time = time.time()
         print("=====Đặc trưng HOG=====")
-        print(f"⏱️ Thời gian xử lý: {end_time - start_time:.4f} giây")
-        return film_name
+        print(f"⏱ Thời gian xử lý: {end_time - start_time:.4f} giây")
+        return result
 
     except Exception as e:
-        return f"❌ Lỗi khi xử lý: {e}"
+        return [f"❌ Lỗi khi xử lý: {e}"]
 
-# ==== Test thử ====
-# if __name__ == "__main__":
-#     input_path = os.path.join(base_dir, "img_test/lgvm.png")
-#     predicted_film = predict_film_auto(input_path)
-#     print(f"🎬 Dự đoán: {predicted_film}")
-    
+if __name__ == "__main__":
+    test_path = os.path.join(base_dir, "img_test/lgvm.png")
+    result = predict_film_auto(test_path, similarity_threshold=0.8, n_movies=5)
+    print("🎬 Dự đoán:", result)
