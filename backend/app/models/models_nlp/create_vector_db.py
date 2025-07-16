@@ -76,6 +76,10 @@ for doc in collection.find():
         description = doc.get("describe", "").strip()
 
         # Embed từng thuộc tính nếu tồn tại
+        if name:
+            vectors.append(embed_text(name))
+            labels.append(name)
+
         if genres:
             for genre in genres.split(','):
                 genre = genre.strip()

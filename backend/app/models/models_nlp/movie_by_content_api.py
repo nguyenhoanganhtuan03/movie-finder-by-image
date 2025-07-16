@@ -171,20 +171,20 @@ def search_movies_by_user_query(user_query, SIMILARITY_THRESHOLD, n_movies):
     return search_prompt, top_n_movies, all_matched_movies
 
 # ========== MAIN ==========
-# while True:
-#     user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
-#     if user_input.lower() == "quit":
-#         print("👋 Thoát chương trình.")
-#         break
+while True:
+    user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
+    if user_input.lower() == "quit":
+        print("👋 Thoát chương trình.")
+        break
 
-#     prompt, top_movies, all_matched_movies = search_movies_by_user_query(user_input, 0.8, 5)
-#     name_movies = [name for name, _ in top_movies]
-#     print(name_movies)
+    prompt, top_movies, all_matched_movies = search_movies_by_user_query(user_input, 0.8, 5)
+    name_movies = [name for name, _ in top_movies]
+    print(name_movies)
 
-#     print("\n🧠 Prompt dùng để truy vấn:", prompt)
-#     if top_movies:
-#         print("🎬 Kết quả tìm được:")
-#         for name, score in top_movies:
-#             print(f"- {name}")
-#     else:
-#         print("❌ Không tìm thấy phim phù hợp.\n")
+    print("\n🧠 Prompt dùng để truy vấn:", prompt)
+    if top_movies:
+        print("🎬 Kết quả tìm được:")
+        for name, score in top_movies:
+            print(f"- {name}")
+    else:
+        print("❌ Không tìm thấy phim phù hợp.\n")
