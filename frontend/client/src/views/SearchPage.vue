@@ -2,6 +2,8 @@
   <div>
     <AppHeader />
 
+    <AppLoading :visible="isUploading" text="Đang xử lý..." />
+
     <div class="container my-5">
       <h2 class="mb-4 text-center">Tìm kiếm phim</h2>
 
@@ -55,9 +57,6 @@
               @change="handleAudioUpload" 
               class="form-control" 
             />
-          </div>
-          <div v-if="isUploading" class="mt-2">
-              <span class="text-info">Đang xử lý...</span>
           </div>
         </div>
 
@@ -157,6 +156,7 @@ import MovieCard from "@/components/movies/movieCard.vue";
 import MovieService from "@/services/movie.service";
 import FinderService from "@/services/finder.service";
 import MiniChatWidget from "@/components/chatbot/ChatbotWidget.vue";
+import AppLoading from "@/components/common/AppLoading.vue";
 
 export default {
   components: {
@@ -164,6 +164,7 @@ export default {
     AppFooter,
     MovieCard,
     MiniChatWidget,
+    AppLoading,
   },
   data() {
       return {
