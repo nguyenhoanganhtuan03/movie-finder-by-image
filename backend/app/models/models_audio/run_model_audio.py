@@ -116,8 +116,7 @@ def predict_from_feature_batch(features, index, index_labels, n_movies, similari
     features = l2_normalize(features.astype(np.float32))
     D, I = index.search(features, n_movies)  
 
-    all_predictions = []
-    priority_predictions = []  # chứa phim có dist == 0.99
+    prediction_stats = {}
 
     for distances, indices in zip(D, I):  
         for dist, idx in zip(distances, indices): 
@@ -131,25 +130,34 @@ def predict_from_feature_batch(features, index, index_labels, n_movies, similari
 
             film_name = CLASSES.get(pred_label, "Khác")
 
-            # Nếu dist == 0.99 thì thêm vào danh sách ưu tiên
-            if dist > 0.98:
-                priority_predictions.append(film_name)
+            # Nếu similarity thấp hơn ngưỡng, gán là "Khác"
+            if sim < similarity_threshold:
+                film_name = CLASSES.get(46, "Khác")
 
-            # Các trường hợp còn lại xử lý như bình thường
-            elif sim >= similarity_threshold:
-                all_predictions.append(film_name)
+            # Ghi nhận số lần và độ tương đồng cao nhất cho mỗi phim
+            if film_name not in prediction_stats:
+                prediction_stats[film_name] = {
+                    "count": 1,
+                    "max_sim": sim
+                }
             else:
-                all_predictions.append(CLASSES.get(46, "Khác"))
+                prediction_stats[film_name]["count"] += 1
+                prediction_stats[film_name]["max_sim"] = max(prediction_stats[film_name]["max_sim"], sim)
 
-    counts = Counter(all_predictions)
+    # Sắp xếp theo: số lần xuất hiện giảm dần → độ tương đồng cao nhất giảm dần
+    sorted_films = sorted(
+        prediction_stats.items(),
+        key=lambda item: (-item[1]["count"], -item[1]["max_sim"])
+    )
 
-    # Lấy top-n_movies phim thường xuyên nhất (bỏ qua priority đã có)
-    sorted_films = sorted(counts.items(), key=lambda item: (-item[1], all_predictions.index(item[0])))
-    normal_results = [film for film, _ in sorted_films if film not in priority_predictions]
+    # In thông tin chi tiết
+    print("📝 Kết quả phân tích phim:")
+    for film, stats in sorted_films:
+        print(f"{film:<25}:  {stats['count']:<2}")
 
-    # Kết quả cuối: Ưu tiên phim có dist = 0.99, sau đó đến phim thường
-    result = priority_predictions + normal_results
+    result = [film for film, _ in sorted_films]
     return result[:n_movies]
+
 
 # ==== Hàm chính ====
 def predict_film_from_audio(audio_path, similarity_threshold, n_movies):

@@ -128,6 +128,7 @@ YÊU CẦU ĐỊNH DẠNG TRẢ LỜI: các từ khóa chính, ngăn cách bằn
 
 LưU Ý:
 - Chỉ sử dụng thông tin có trong câu hỏi người dùng.
+- Nếu được, hãy chỉnh sửa chính tả Tiếng Việt.
 Ví dụ:
     - CÂU HỎI NGƯỜI DÙNG: phim kinh dị, hài, có Trấn Thành đóng, lấy bối cảnh bệnh viện
     - TRẢ LỜI: kinh dị, hài, Trấn Thành, bệnh viện
@@ -166,25 +167,26 @@ def search_movies_by_user_query(user_query, SIMILARITY_THRESHOLD, n_movies):
     all_matched_movies = [(name, stats["count"]) for name, stats in sorted_movies]
 
     print(f"Từ khóa: {search_prompt}")
-    print(all_matched_movies)
+    for name, stats in sorted_movies:
+        print(f"{name:<25}: {stats['count']}")
 
     return search_prompt, top_n_movies, all_matched_movies
 
 # ========== MAIN ==========
-while True:
-    user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
-    if user_input.lower() == "quit":
-        print("👋 Thoát chương trình.")
-        break
+# while True:
+#     user_input = input("Nhập câu hỏi của bạn (hoặc 'quit' để thoát): ").strip()
+#     if user_input.lower() == "quit":
+#         print("👋 Thoát chương trình.")
+#         break
 
-    prompt, top_movies, all_matched_movies = search_movies_by_user_query(user_input, 0.8, 5)
-    name_movies = [name for name, _ in top_movies]
-    print(name_movies)
+#     prompt, top_movies, all_matched_movies = search_movies_by_user_query(user_input, 0.8, 5)
+#     name_movies = [name for name, _ in top_movies]
+#     print(name_movies)
 
-    print("\n🧠 Prompt dùng để truy vấn:", prompt)
-    if top_movies:
-        print("🎬 Kết quả tìm được:")
-        for name, score in top_movies:
-            print(f"- {name}")
-    else:
-        print("❌ Không tìm thấy phim phù hợp.\n")
+#     print("\n🧠 Prompt dùng để truy vấn:", prompt)
+#     if top_movies:
+#         print("🎬 Kết quả tìm được:")
+#         for name, score in top_movies:
+#             print(f"- {name}")
+#     else:
+#         print("❌ Không tìm thấy phim phù hợp.\n")

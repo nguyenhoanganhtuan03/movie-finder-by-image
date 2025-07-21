@@ -158,6 +158,11 @@ def predict_film_from_video(video_path, similarity_threshold, n_movies):
         key=lambda item: (-item[1], unique_ordered_films.index(item[0]))
     )
 
+    # In thống kê chi tiết
+    print("📝 Kết quả phân tích video:")
+    for film, count in sorted_films:
+        print(f"{film:<25}: {count}")
+
     result = [film for film, _ in sorted_films[:n_movies]]
     return result
 
