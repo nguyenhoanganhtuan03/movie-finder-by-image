@@ -11,13 +11,22 @@
       <div class="d-flex flex-wrap gap-4">
         <!-- BÊN TRÁI: Nhập mô tả, upload ảnh, upload video -->
         <div class="flex-grow-1" style="min-width: 280px;">
-          <!-- Nhập mô tả -->
+          <!-- Nhập mô tả + Nút micro -->
           <div class="mb-3">
-            <label class="form-label">Nhập mô tả ngắn gọn:</label>
+            <div class="d-flex align-items-center justify-content-between">
+              <label class="form-label mb-0">Nhập mô tả ngắn gọn:</label>
+              <button
+                @click="handleSpeechInput"
+                class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                title="Nhấn để nói"
+              >
+                <i class="bi bi-mic-fill me-1"></i> Nói
+              </button>
+            </div>
             <input
               v-model="searchText"
               type="text"
-              class="form-control"
+              class="form-control mt-2"
               placeholder="Vui lòng nhập mô tả rõ ràng để có thể tìm kiếm chính xác hơn"
               @keyup.enter="searchByContent"
             />
@@ -157,6 +166,7 @@ import MovieService from "@/services/movie.service";
 import FinderService from "@/services/finder.service";
 import MiniChatWidget from "@/components/chatbot/ChatbotWidget.vue";
 import AppLoading from "@/components/common/AppLoading.vue";
+import Sp2TextService from "@/services/sp2text.service";
 
 export default {
   components: {
@@ -202,6 +212,40 @@ export default {
         console.error("Lỗi khi tìm kiếm theo nội dung:", error);
         this.searchResults = [];
         this.predictedName = "";
+      }
+    },
+
+    async handleSpeechInput() {
+      try {
+        this.isUploading = true;
+        const result = await Sp2TextService.getTextFromSpeech();
+        console.log(result);
+
+        // Nếu là chuỗi lỗi
+        const errorMessages = [
+          "Không phát hiện giọng nói trong thời gian chờ.",
+          "Không hiểu nội dung bạn nói.",
+        ];
+
+        // Nếu result là object (ví dụ {text: "..."}), thì dùng text
+        if (typeof result === "string") {
+          if (
+            errorMessages.includes(result) ||
+            result.startsWith("Lỗi kết nối tới dịch vụ nhận diện") ||
+            result.startsWith("Lỗi khác:")
+          ) {
+            alert("Không thể nhận diện giọng nói.");
+          } else {
+            this.searchText = result;
+          }
+        } else if (result && typeof result.text === "string") {
+          this.searchText = result.text;
+        }
+      } catch (error) {
+        console.error("Lỗi nhận diện giọng nói:", error);
+        alert("Đã xảy ra lỗi khi xử lý giọng nói.");
+      } finally {
+        this.isUploading = false;
       }
     },
 

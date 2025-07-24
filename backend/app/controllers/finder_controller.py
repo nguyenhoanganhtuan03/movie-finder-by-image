@@ -1,8 +1,5 @@
 from fastapi import HTTPException
-from typing import Optional, List
-from pymongo import ReturnDocument
 
-from app.database import db
 from app.models.models_nlp.movie_by_content_api import search_movies_by_user_query
 from app.models.models_audio.run_model_audio import predict_film_from_audio
 

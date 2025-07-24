@@ -3,8 +3,6 @@ from fastapi.responses import JSONResponse
 import shutil
 import os
 from uuid import uuid4
-from pydantic import BaseModel
-from typing import List
 
 from app.controllers.finder_controller import search_movie_by_content, search_movie_by_audio
 from app.controllers.movie_controller import search_movies_by_name
