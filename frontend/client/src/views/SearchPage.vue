@@ -81,6 +81,18 @@
             </select>
           </div>
 
+                      <!-- Ngưỡng cho ảnh có thể âm
+                      <div class="mb-3">
+                        <label class="form-label">Ngưỡng tương đồng:</label>
+                        <input
+                          v-model.number="similarityThreshold"
+                          type="number"
+                          step="0.01"
+                          class="form-control"
+                          placeholder="Ví dụ: 0.8 hoặc -0.2"
+                        />
+                      </div>-->
+
           <!-- Chọn số lượng phim hiển thị -->
           <div class="mb-3">
             <label class="form-label">Số lượng tìm kiếm tối đa:</label>

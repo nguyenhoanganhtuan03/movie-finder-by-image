@@ -69,7 +69,7 @@ def call_gemini_api_with_history(message_history, api_key):
 def create_qa_prompt():
     return (
         "Bạn là một chuyên gia điện ảnh. Trả lời câu hỏi của người dùng về các bộ phim, "
-        "diễn viên, đạo diễn, thể loại hoặc năm phát hành một cách chính xác và dễ hiểu. "
+        "Trả lời ngắn gọn, dễ hiểu."
         "Hãy duy trì ngữ cảnh của cuộc trò chuyện và tham khảo các câu hỏi trước đó khi cần thiết. "
         "Nếu người dùng hỏi về 'phim này', 'bộ phim đó', 'phim vừa nói', hoặc không đề cập tên phim. Hãy hiểu họ đang nhắc đến phim được đề cập gần nhất."
     )
@@ -190,19 +190,6 @@ class MovieQASystem:
         self.update_history("model", response)
 
         return response
-
-    def get_conversation_history(self):
-        """Lấy lịch sử trò chuyện cho debug"""
-        return self.message_history[2:]  # Bỏ qua system prompt
-
-    def clear_history(self):
-        """Xóa lịch sử trò chuyện"""
-        self.message_history = [
-            {"role": "user", "parts": [{"text": create_qa_prompt()}]},
-            {"role": "model", "parts": [{"text": "Chào bạn! Tôi là chuyên gia điện ảnh. Tôi sẽ trả lời các câu hỏi về phim và duy trì ngữ cảnh cuộc trò chuyện. Hãy hỏi tôi bất kỳ điều gì về phim nhé!"}]}
-        ]
-        self.current_movie_context = None
-        self.last_used_docs = []
 
 # ========== ĐỌC VECTORSTORE FAISS ==========
 def load_vector_database():
