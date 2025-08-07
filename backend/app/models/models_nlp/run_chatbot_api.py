@@ -90,9 +90,9 @@ class MovieQASystem:
         ]
 
         self.last_used_docs = []
-        self.current_movie_context = None  # Lưu phim đang được thảo luận
+        self.current_movie_context = None
 
-    def search_relevant_docs(self, query, k=10):
+    def search_relevant_docs(self, query, k=20):
         try:
             return self.db.similarity_search(query, k=k)
         except Exception as e:
@@ -257,5 +257,5 @@ def main():
             print(f"❌ Lỗi: {e}")
             continue
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
