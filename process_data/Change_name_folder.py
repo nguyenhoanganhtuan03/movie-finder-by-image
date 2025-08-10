@@ -33,4 +33,4 @@ def rename_all_subfolders(root_dir):
                     print(f"⚠️ Bỏ qua: {safe_name} đã tồn tại")
 
 
-rename_all_subfolders('E:\\Data\\Movie_Dataset\\Film_Cut_Dataset')
+rename_all_subfolders('E:\\Data\\Movie_Dataset\\Film_Dataset')

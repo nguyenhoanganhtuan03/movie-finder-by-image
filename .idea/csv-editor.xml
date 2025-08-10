@@ -31,13 +31,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\process_data\segment_log.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
       </map>
     </option>
   </component>

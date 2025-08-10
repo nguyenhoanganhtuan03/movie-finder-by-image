@@ -34,7 +34,7 @@ def summarize_counts(counts_dict):
     return total, mean, variance, std_dev
 
 # ======== SỬ DỤNG ========
-root_directory = "E:\\Data\\Movie_Dataset\\Film_Cut_Dataset"
+root_directory = "E:\\Data\\Movie_Dataset\\Film_Cut_Dataset_2"
 
 video_counts = count_videos_in_folder(root_directory)
 
