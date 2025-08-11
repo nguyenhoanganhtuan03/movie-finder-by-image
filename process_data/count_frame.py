@@ -40,9 +40,9 @@ def count_images_per_folder(root_dir, image_extensions=None):
 # ======== SỬ DỤNG ========
 
 print("==== Thư mục Train ====")
-folder_train_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_2\\Train'
+folder_train_path = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Train'
 count_images_per_folder(folder_train_path)
 
 print("\n==== Thư mục Test ====")
-folder_test_path = 'E:\\Data\\Movie_Dataset\\Process_Frames_2\\Test'
+folder_test_path = 'E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Test'
 count_images_per_folder(folder_test_path)

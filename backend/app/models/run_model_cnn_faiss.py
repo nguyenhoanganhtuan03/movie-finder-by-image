@@ -8,13 +8,14 @@ from collections import Counter, OrderedDict
 # from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.applications.resnet50 import preprocess_input
 from app.models.models_audio.call_model_cnn import call_model
+# from models_audio.call_model_cnn import call_model
 from tensorflow.keras.preprocessing import image
 
 # ==== Cấu hình ====
 image_size = 224
 base_dir = os.path.dirname(os.path.abspath(__file__))
-index_path = os.path.join(base_dir, "faiss_224/resnet50/faiss_features.index")
-label_path = os.path.join(base_dir, "faiss_224/resnet50/faiss_labels.npy")
+index_path = os.path.join(base_dir, "faiss_224_new/resnet50/faiss_features.index")
+label_path = os.path.join(base_dir, "faiss_224_new/resnet50/faiss_labels.npy")
 # similarity_threshold = 0.8
 
 # ==== Load model ResNet50 ====
@@ -191,5 +192,5 @@ def predict_film_auto(input_path, similarity_threshold, n_movies):
 # ==== Test ====
 # if __name__ == "__main__":
 #     input_path = os.path.join(base_dir, "img_test/mada.mp4")
-#     predicted_film = predict_film_auto(input_path)
+#     predicted_film = predict_film_auto(input_path, 0.8, 6)
 #     print(f"🎬 Dự đoán: {predicted_film}")
