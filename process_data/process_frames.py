@@ -23,7 +23,7 @@ def is_dominated_by_one_color(image_path, threshold=0.9):
 
     return max_ratio >= threshold
 
-def copy_valid_images(input_root, output_root, threshold=0.9):
+def copy_valid_images(input_root, output_root, threshold=0.8):
     for label_name in os.listdir(input_root):
         label_path = os.path.join(input_root, label_name)
         if not os.path.isdir(label_path):
@@ -47,6 +47,6 @@ def copy_valid_images(input_root, output_root, threshold=0.9):
                 print(f"Error processing {file_path}: {e}")
 
 # Sử dụng:
-input_root = "E:\\Data\\Movie_Dataset\\Extract_Frames_1\\Test"
-output_root = "E:\\Data\\Movie_Dataset\\Process_Frames_1\\Test"
-copy_valid_images(input_root, output_root)
+input_root = "E:\\Data\\Movie_Dataset\\Extract_Frames_2\\Test"
+output_root = "E:\\Data\\Movie_Dataset\\Process_Frames_2\\Test"
+copy_valid_images(input_root, output_root, 0.8)
