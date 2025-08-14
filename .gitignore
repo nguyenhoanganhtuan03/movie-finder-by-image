@@ -6,3 +6,4 @@ backend/app/.env
 backend/app/models/faiss_224
 backend/app/models/models_audio/features_faiss
 backend/app/models/faiss_224_new
+process_data/feature_sift
