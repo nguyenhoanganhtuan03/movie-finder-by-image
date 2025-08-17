@@ -45,6 +45,25 @@
                   <i :class="msg.sender === 'user' ? 'bi bi-person-fill' : 'bi bi-robot'"></i>
                   {{ msg.sender === 'user' ? 'Bạn' : 'AI Bot' }}
                 </small>
+
+                <!-- Nếu có file preview -->
+                <template v-if="msg.fileUrl">
+                  <div v-if="['png','jpg','jpeg'].includes(msg.fileType)">
+                    <img :src="msg.fileUrl" class="img-fluid rounded mb-2" style="max-height:200px;" />
+                  </div>
+                  <div v-else-if="msg.fileType === 'mp4'">
+                    <video controls class="w-100 rounded mb-2" style="max-height:250px;">
+                      <source :src="msg.fileUrl" type="video/mp4" />
+                    </video>
+                  </div>
+                  <div v-else-if="['mp3','wav'].includes(msg.fileType)">
+                    <audio controls class="w-100 mb-2">
+                      <source :src="msg.fileUrl" :type="`audio/${msg.fileType}`" />
+                    </audio>
+                  </div>
+                </template>
+
+                <!-- Text bình thường -->
                 <div>{{ msg.text }}</div>
                 <small class="opacity-75 d-block mt-1">{{ formatTime(msg.timestamp) }}</small>
               </div>
@@ -266,16 +285,20 @@ export default {
       const file = e.target.files[0];
       if (!file) return;
 
+      const ext = file.name.split('.').pop().toLowerCase();
+      const fileUrl = URL.createObjectURL(file);
+
       messages.value.push({
         sender: 'user',
-        text: `📎 Bạn đã tải lên: ${file.name}`,
+        text: `📎 ${file.name}`,
+        fileUrl,
+        fileType: ext,
         timestamp: new Date()
       });
 
       try {
         let result;
         let movieName = null;
-        const ext = file.name.split('.').pop().toLowerCase();
 
         if (['wav', 'mp3'].includes(ext)) {
           result = await finderService.searchByAudio(file, 0.8, 3);
@@ -293,7 +316,6 @@ export default {
 
         if (movieName && movieName !== "Khác") {
           const autoPrompt = `Tôi vừa tải lên một ${['wav','mp3'].includes(ext) ? 'đoạn âm thanh' : (ext==='mp4' ? 'video' : 'ảnh')} và hệ thống nhận dạng được phim: "${movieName}". Hãy cho tôi biết thêm thông tin về bộ phim này.`;
-
           await sendHiddenMessage(autoPrompt);
         } else {
           messages.value.push({
