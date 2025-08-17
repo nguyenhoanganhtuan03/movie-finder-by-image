@@ -4,7 +4,7 @@
     class="chat-widget shadow-lg rounded-4"
     :style="widgetStyle"
   >
-    <!-- Custom resize handle ở góc trái trên -->
+    <!-- Resize handle -->
     <div class="resize-handle" @mousedown="startResizing" title="Kéo để thay đổi kích thước">
       <i class="bi bi-box-arrow-in-up-left text-white"></i>
     </div>
@@ -62,7 +62,7 @@
       </div>
 
       <!-- Input -->
-      <form @submit.prevent="sendMessage" class="chat-input p-2 border-top bg-white d-flex gap-2">
+      <form @submit.prevent="sendMessageFromInput" class="chat-input p-2 border-top bg-white d-flex gap-2 align-items-center">
         <input
           ref="messageInput"
           v-model="userInput"
@@ -70,8 +70,25 @@
           class="form-control"
           placeholder="Nhập tin nhắn..."
           :disabled="isTyping"
-          required
         />
+
+        <!-- Input file ẩn -->
+        <input
+          ref="fileInput"
+          type="file"
+          class="d-none"
+          @change="handleFileUpload"
+          accept=".png,.jpg,.jpeg,.mp4,.wav,.mp3"
+        />
+        <button
+          type="button"
+          class="btn btn-light"
+          @click="$refs.fileInput.click()"
+          :disabled="isTyping"
+          title="Tải file (ảnh, video, âm thanh)"
+        >
+          <i class="bi bi-paperclip"></i>
+        </button>
       </form>
     </div>
   </div>
@@ -80,6 +97,8 @@
 <script>
 import { ref, onMounted, nextTick, onBeforeUnmount, computed, watch } from 'vue';
 import chatbotService from '@/services/chatbot.service';
+import movieService from '@/services/movie.service';
+import finderService from '@/services/finder.service';
 import { useAuthStore } from '@/store/auth';
 import { useChatbotStore } from '@/store/chatbot';
 
@@ -142,10 +161,10 @@ export default {
         const res = await chatbotService.getChatById(id);
         const contentArr = res.content || [];
         const formattedMessages = contentArr.flatMap(item => {
-          const messages = [];
-          if (item.user) messages.push({ sender: 'user', text: item.user, timestamp: new Date() });
-          if (item.bot) messages.push({ sender: 'bot', text: item.bot, timestamp: new Date() });
-          return messages;
+          const msgs = [];
+          if (item.user) msgs.push({ sender: 'user', text: item.user, timestamp: new Date() });
+          if (item.bot) msgs.push({ sender: 'bot', text: item.bot, timestamp: new Date() });
+          return msgs;
         });
         messages.value = formattedMessages;
         chatStarted.value = true;
@@ -155,34 +174,39 @@ export default {
       }
     };
 
-    const sendMessage = async () => {
-      const text = userInput.value.trim();
-      if (!text || isTyping.value) return;
+    const sendMessage = async (text) => {
+      const messageText = (text ?? '').toString().trim();
+      if (!messageText || isTyping.value) return;
+
       const userId = authStore.user?.id;
       if (!userId) {
         messages.value.push({ sender: 'bot', text: 'Vui lòng đăng nhập.', timestamp: new Date() });
         return;
       }
-      messages.value.push({ sender: 'user', text, timestamp: new Date() });
-      userInput.value = '';
+
+      // hiển thị user message
+      messages.value.push({ sender: 'user', text: messageText, timestamp: new Date() });
       isTyping.value = true;
       scrollToBottom();
+
       try {
         let res;
         if (!chatId.value) {
-          res = await chatbotService.sendMessage(userId, text);
+          res = await chatbotService.sendMessage(userId, messageText);
           if (res.hischat_id) {
             chatbotStore.setChatId(res.hischat_id);
             chatId.value = res.hischat_id;
           }
         } else {
-          res = await chatbotService.updateHistory(chatId.value, text, userId);
+          res = await chatbotService.updateHistory(chatId.value, messageText, userId);
         }
+
         let botAnswer = res.answer || 'Xin lỗi, tôi chưa thể trả lời.';
         const contentArr = res.updated_history?.content;
         if (Array.isArray(contentArr) && contentArr.at(-1)?.bot) {
           botAnswer = contentArr.at(-1).bot;
         }
+
         messages.value.push({ sender: 'bot', text: botAnswer, timestamp: new Date() });
       } catch (e) {
         messages.value.push({ sender: 'bot', text: 'Lỗi khi gửi tin.', timestamp: new Date() });
@@ -190,6 +214,104 @@ export default {
         isTyping.value = false;
         scrollToBottom();
         nextTick(() => messageInput.value?.focus());
+      }
+    };
+
+    // gửi ngầm, không hiển thị user message
+    const sendHiddenMessage = async (text) => {
+      const messageText = (text ?? '').toString().trim();
+      if (!messageText || isTyping.value) return;
+
+      const userId = authStore.user?.id;
+      if (!userId) return;
+
+      isTyping.value = true;
+      try {
+        let res;
+        if (!chatId.value) {
+          res = await chatbotService.sendMessage(userId, messageText);
+          if (res.hischat_id) {
+            chatbotStore.setChatId(res.hischat_id);
+            chatId.value = res.hischat_id;
+          }
+        } else {
+          res = await chatbotService.updateHistory(chatId.value, messageText, userId);
+        }
+
+        let botAnswer = res.answer || null;
+        const contentArr = res.updated_history?.content;
+        if (Array.isArray(contentArr) && contentArr.at(-1)?.bot) {
+          botAnswer = contentArr.at(-1).bot;
+        }
+
+        if (botAnswer) {
+          messages.value.push({ sender: 'bot', text: botAnswer, timestamp: new Date() });
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        isTyping.value = false;
+      }
+    };
+
+    // Hàm riêng cho input submit
+    const sendMessageFromInput = () => {
+      const text = (userInput.value ?? '').toString().trim();
+      if (!text) return;
+      userInput.value = '';
+      sendMessage(text);
+    };
+
+    const handleFileUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      messages.value.push({
+        sender: 'user',
+        text: `📎 Bạn đã tải lên: ${file.name}`,
+        timestamp: new Date()
+      });
+
+      try {
+        let result;
+        let movieName = null;
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (['wav', 'mp3'].includes(ext)) {
+          result = await finderService.searchByAudio(file, 0.8, 3);
+        } else if (['png', 'jpg', 'jpeg', 'mp4'].includes(ext)) {
+          result = await movieService.searchByFile(file, 0.8, 3);
+        }
+
+        if (result) {
+          if (Array.isArray(result.predicted_names) && result.predicted_names.length > 0) {
+            movieName = result.predicted_names[0];
+          } else if (Array.isArray(result.results) && result.results.length > 0) {
+            movieName = result.results[0].name || result.results[0].title;
+          }
+        }
+
+        if (movieName && movieName !== "Khác") {
+          const autoPrompt = `Tôi vừa tải lên một ${['wav','mp3'].includes(ext) ? 'đoạn âm thanh' : (ext==='mp4' ? 'video' : 'ảnh')} và hệ thống nhận dạng được phim: "${movieName}". Hãy cho tôi biết thêm thông tin về bộ phim này.`;
+
+          await sendHiddenMessage(autoPrompt);
+        } else {
+          messages.value.push({
+            sender: 'bot',
+            text: '❌ Không tìm thấy phim phù hợp từ file đã tải lên.',
+            timestamp: new Date()
+          });
+        }
+
+      } catch (err) {
+        console.error(err);
+        messages.value.push({
+          sender: 'bot',
+          text: '⚠️ Lỗi khi xử lý file tải lên.',
+          timestamp: new Date()
+        });
+      } finally {
+        e.target.value = '';
       }
     };
 
@@ -242,17 +364,22 @@ export default {
       chatContainer,
       messageInput,
       sendMessage,
+      sendHiddenMessage,
+      sendMessageFromInput,
       formatTime,
       handleClose,
       loadChatHistory,
       resetChat,
       chatWidget,
       startResizing,
-      widgetStyle
+      widgetStyle,
+      handleFileUpload
     };
   }
 };
 </script>
+
+
 
 <style scoped>
 .chat-widget {
