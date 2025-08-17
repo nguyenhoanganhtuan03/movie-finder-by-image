@@ -10,13 +10,13 @@ class UserService {
             const data = (await this.api.post("/register", userData)).data;
             return {
                 status: "success",
-                message: data.message || "User registered successfully",
+                message: data.message || "Đăng ký người dùng thành công !",
                 data: data.data,
             };
         } catch (err) {
             return {
                 status: "error",
-                message: err.response?.data?.message || "Registration failed",
+                message: err.response?.data?.message || "Đăng ký thất bại !",
             };
         }
     }
@@ -28,7 +28,7 @@ class UserService {
 
             return {
                 status: "success",
-                message: response.data.message || "Login successful",
+                message: response.data.message || "Đăng nhập thành công !",
                 user: response.data.user,  
             };
         } catch (err) {
@@ -36,7 +36,7 @@ class UserService {
 
             return {
                 status: "error",
-                message: err.response?.data?.message || "Login failed",
+                message: err.response?.data?.message || "Đăng nhập thất bại !",
             };
         }
     }

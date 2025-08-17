@@ -7,6 +7,11 @@
       <div class="login-form">
         <h2>Đăng nhập</h2>
 
+        <!-- Hiển thị thông báo thành công -->
+        <div v-if="successMessage" class="alert alert-success text-center" role="alert">
+          {{ successMessage }}
+        </div>
+
         <!-- Form đăng nhập -->
         <form @submit.prevent="handleLogin">
           <div class="mb-3">
@@ -33,7 +38,10 @@
             />
           </div>
 
-          <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+          <button type="submit" class="btn btn-primary w-100" :disabled="loading">
+            <span v-if="loading">Đang đăng nhập...</span>
+            <span v-else>Đăng nhập</span>
+          </button>
         </form>
 
         <!-- Các nút đăng nhập qua Gmail và Facebook -->
@@ -53,9 +61,8 @@
         </div>
 
         <div class="mt-3 text-center">
-            <router-link to="/stafflogin">Đăng nhập với tư cách nhân viên</router-link>
-          </div>
-
+          <router-link to="/stafflogin">Đăng nhập với tư cách nhân viên</router-link>
+        </div>
       </div>
     </div>
 
@@ -83,10 +90,10 @@ export default {
     const email = ref("");
     const password = ref("");
     const errorMessage = ref("");
+    const successMessage = ref("");
     const loading = ref(false);
 
     const handleLogin = async () => {
-      errorMessage.value = "";
       loading.value = true;
 
       try {
@@ -100,11 +107,11 @@ export default {
           alert("🎉 Đăng nhập thành công!");
           router.push("/");
         } else {
-          errorMessage.value = response.message;
+          alert(response.message || "❌ Đăng nhập thất bại, vui lòng thử lại!");
         }
       } catch (error) {
         console.error("🔴 Login error:", error);
-        errorMessage.value = "Lỗi đăng nhập, vui lòng thử lại!";
+        alert("⚠️ Có lỗi xảy ra trong quá trình đăng nhập!");
       }
 
       loading.value = false;
@@ -114,12 +121,14 @@ export default {
       email,
       password,
       errorMessage,
+      successMessage,
       loading,
       handleLogin,
     };
   },
 };
 </script>
+
 
 <style scoped>
 .login-container {
