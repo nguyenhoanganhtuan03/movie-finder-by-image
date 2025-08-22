@@ -149,14 +149,13 @@ movie-finder-by-image/
 
 **Tác giả**: Nguyễn Hoàng Anh Tuấn
 - 📱 **Điện thoại**: 0353737550
-- 📧 **Email**: [tuan.nguyen@example.com](mailto:nhatuan20032508@gmail.com)
+- 📧 **Email**: [nhatuan20032508@gmail.com](mailto:nhatuan20032508@gmail.com)
 - 💼 **GitHub**: [@tuannguyen](https://github.com/nguyenhoanganhtuan03)
 
 ## 🙏 Lời cảm ơn
 
 - Cảm ơn cộng đồng phát triển Vue.js và Python
 - Cảm ơn các nguồn dữ liệu phim Việt Nam
-- Cảm ơn các contributor đã đóng góp cho dự án
 
 ---
 
