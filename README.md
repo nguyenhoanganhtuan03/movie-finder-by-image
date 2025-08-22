@@ -30,7 +30,7 @@ Giao diện web thân thiện, dễ sử dụng với khả năng xem phim trự
 
 ```bash
 git clone https://github.com/nguyenhoanganhtuan03/movie-finder-by-image.git
-cd vietnamese-movie-search
+cd movie-finder-by-image
 ```
 
 ### 2. Cài đặt Backend
