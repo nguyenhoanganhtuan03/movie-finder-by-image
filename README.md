@@ -139,8 +139,6 @@ movie-finder-by-image/
 │       ├── public/
 │       └── package.json
 │
-├── data/                      # Movie database
-├── models/                    # Trained AI models
 ├── requirements.txt           # Python dependencies
 └── README.md
 ```
