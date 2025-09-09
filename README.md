@@ -146,7 +146,6 @@ movie-finder-by-image/
 ## 📞 Liên hệ
 
 **Tác giả**: Nguyễn Hoàng Anh Tuấn
-- 📱 **Điện thoại**: 0353737550
 - 📧 **Email**: [nhatuan20032508@gmail.com](mailto:nhatuan20032508@gmail.com)
 - 💼 **GitHub**: [@tuannguyen](https://github.com/nguyenhoanganhtuan03)
 
