@@ -153,7 +153,3 @@ movie-finder-by-image/
 
 - Cảm ơn cộng đồng phát triển Vue.js và Python
 - Cảm ơn các nguồn dữ liệu phim Việt Nam
-
----
-
-⭐ **Nếu dự án hữu ích, hãy cho chúng tôi một star trên GitHub!**
