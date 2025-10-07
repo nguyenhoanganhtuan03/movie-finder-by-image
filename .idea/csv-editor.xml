@@ -3,6 +3,20 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\backend\app\models\faiss_224_new\sift\evaluation_metrics_sift_faiss.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\backend\app\models\faiss_224_new\sift\final_classification_report_sift_faiss.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\backend\app\models\models_audio\features_faiss\efficientnetb0\evaluation_metrics_faiss.csv">
           <value>
             <Attribute>
